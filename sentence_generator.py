@@ -244,6 +244,8 @@ def main():
             log_it("       ... all_words now contains %d words." % len(all_words), 2)
         if all_words:
             starts, the_mapping = buildMapping(all_words, markov_length)
+            if chains_file:
+                store_chains(markov_length, starts, the_mapping, chains_file)
     if starts == None or the_mapping == None:     # Ridiculous! We must have SOMETHING to work with
         log_it("ERROR: You must specify a chains file with -l, or else at least one text file with -i.")
         sys.exit(2)
