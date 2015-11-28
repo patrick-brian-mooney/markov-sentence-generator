@@ -7,17 +7,20 @@ import sys
 # These mappings can get fairly large -- they're stored globally to
 # save copying time.
 
+# the_temp_mapping: initially an empty dictionary, {}
 # (tuple of words) -> {dict: word -> number of times the word appears following the tuple}
 # Example entry:
 #    ('eyes', 'turned') => {'to': 2.0, 'from': 1.0}
 # Used briefly while first constructing the normalized mapping
-the_temp_mapping = {}
 
+# the_mapping: initially an empty dictionary, {}
 # (tuple of words) -> {dict: word -> *normalized* number of times the word appears following the tuple}
 # Example entry:
 #    ('eyes', 'turned') => {'to': 0.66666666, 'from': 0.33333333}
+the_temp_mapping = {}
 the_mapping = {}
 
+# starts: a list of words that can begin sentences. Initially an empty list, []
 # Contains the set of words that can start sentences
 starts = []
 
