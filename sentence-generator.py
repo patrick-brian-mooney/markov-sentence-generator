@@ -4,8 +4,10 @@ import re
 import random
 import sys
 
-# These mappings can get fairly large -- they're stored globally to
-# save copying time.
+# Schwartz's version stored mappings globally to save copying time, but this
+# makes the code less flexible for my purposes; still, I've kept his
+# declarations for the global variables here, where the variables were
+# previously declared.
 
 # the_temp_mapping: initially an empty dictionary, {}
 # (tuple of words) -> {dict: word -> number of times the word appears following the tuple}
@@ -17,12 +19,9 @@ import sys
 # (tuple of words) -> {dict: word -> *normalized* number of times the word appears following the tuple}
 # Example entry:
 #    ('eyes', 'turned') => {'to': 0.66666666, 'from': 0.33333333}
-the_temp_mapping = {}
-the_mapping = {}
 
 # starts: a list of words that can begin sentences. Initially an empty list, []
 # Contains the set of words that can start sentences
-starts = []
 
 def fix_caps(word):
     """We want to be able to compare words independent of their capitalization."""
@@ -51,13 +50,12 @@ def word_list(filename):
     the_file.close()
     return word_list
 
-def addItemToTempMapping(history, word):
+def addItemToTempMapping(history, word, the_temp_mapping):
     '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
     the_temp_mapping (and the_mapping) both match each word to a list of possible next
     words.
     Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
     the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].'''
-    global the_temp_mapping
     while len(history) > 0:
         first = to_hash_key(history)
         if first in the_temp_mapping:
@@ -72,7 +70,9 @@ def addItemToTempMapping(history, word):
 
 def buildMapping(word_list, markov_length):
     """Building and normalizing the_mapping."""
-    global the_temp_mapping
+    the_temp_mapping = {}
+    the_mapping = {}
+    starts = []
     starts.append(word_list[0])
     for i in range(1, len(word_list) - 1):
         if i <= markov_length:
@@ -83,14 +83,15 @@ def buildMapping(word_list, markov_length):
         # if the last elt was a period, add the next word to the start list
         if history[-1] == "." and follow not in ".,!?;":
             starts.append(follow)
-        addItemToTempMapping(history, follow)
+        addItemToTempMapping(history, follow, the_temp_mapping)
     # Normalize the values in the_temp_mapping, put them into mapping
     for first, followset in the_temp_mapping.items():
         total = sum(followset.values())
         # Normalizing here:
         the_mapping[first] = dict([(k, v / total) for k, v in followset.items()])
+    return starts, the_mapping
 
-def next(prevList):
+def next(prevList, the_mapping):
     """Returns the next word in the sentence (chosen randomly),
     given the previous ones."""
     sum = 0.0
@@ -106,14 +107,14 @@ def next(prevList):
             retval = k
     return retval
 
-def genSentence(markov_length):
+def genSentence(markov_length, the_mapping, starts):
     '''Start with a random "starting word"'''
     curr = random.choice(starts)
     sent = curr.capitalize()
     prevList = [curr]
     # Keep adding words until we hit a period
     while curr not in ".":
-        curr = next(prevList)
+        curr = next(prevList, the_mapping)
         prevList.append(curr)
         # if the prevList has gotten too long, trim it
         if len(prevList) > markov_length:
@@ -133,8 +134,8 @@ def main():
     if len(sys.argv) == 3:
         markov_length = int(sys.argv[2])
 
-    buildMapping(word_list(filename), markov_length)
-    print(genSentence(markov_length))
+    starts, the_mapping = buildMapping(word_list(filename), markov_length)
+    print(genSentence(markov_length, the_mapping, starts))
 
 if __name__ == "__main__":
     main()
