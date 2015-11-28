@@ -3,6 +3,7 @@
 import re
 import random
 import sys
+import pickle
 
 # Schwartz's version stored mappings globally to save copying time, but this
 # makes the code less flexible for my purposes; still, I've kept his
@@ -123,6 +124,34 @@ def genSentence(markov_length, the_mapping, starts):
             sent += " " # Add spaces between words (but not punctuation)
         sent += curr
     return sent
+
+def store_chains(markov_length, the_starts, the_mapping, filename):
+    """Shove the relevant chain-based data into a dictionary, then pickle it and store
+    it in the designated file."""
+    chains_dictionary = { 'markov_length': markov_length, 'the_starts': the_starts, 'the_mapping': the_mapping }
+    try:
+        the_chains_file = open(filename, 'wb')
+        the_pickler = pickle.Pickler(the_chains_file, protocol=-1)    # Use the most efficient protocol possible, even if not readable by earlier Pythons
+        the_pickler.dump(chains_dictionary)
+        the_chains_file.close()
+    except IOError as e:
+        print("ERROR: Can't write chains to %s; the system said '%s'." % (filename, str(e)))
+    except pickle.PickleError as e:
+        print("ERROR: Can't write chains to %s because a pickling error occurred; the system said '%s'." % (filename, str(e))) 
+
+def read_chains(filename):
+    """Shove the relevant chain-based data into a dictionary, then pickle it and store
+    it in the designated file."""
+    try:
+        the_chains_file = open(filename, 'rb')
+        # the_pickler = pickle.Pickler(the_chains_file, protocol=-1)    # Use the most efficient protocol possible, even if not readable by earlier Pythons
+        chains_dictionary = pickle.load(the_chains_file)
+        the_chains_file.close()
+    except IOError as e:
+        print("ERROR: Can't read chains from %s; the system said '%s'." % (filename, str(e)))
+    except pickle.PickleError as e:
+        print("ERROR: Can't read chains from %s because a pickling error occurred; the system said '%s'." % (filename, str(e))) 
+    return chains_dictionary['markov_length'], chains_dictionary['the_starts'], chains_dictionary['the_mapping']
 
 def main():
     if len(sys.argv) < 2:
