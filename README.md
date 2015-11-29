@@ -1,12 +1,35 @@
 Markov Sentence Generator
 =========================
 
-This program generates a sentence's worth of "real-looking" text using a Markov model and sample textual training input.  Given some sample text from which to build a model, the program prints out a sentence based on a Markov chain.  Use it thus:
+v1.1, 29 November 2015
+----------------------
 
-`$ ./sentence-generator.py  filename  [chain length]`
+This program generates a sentence's worth of "real-looking" text using a Markov model and sample textual training input.  Given some sample text from which to build a model, the program prints out a sentence based on a Markov chain.  Use it by doing something like:
 
-where `filename` is a file containing some training text for the sentence to imitate (one of Project Gutenberg's books fits the bill nicely) and `chain length` optionally represents the number of words taken into account when choosing the next word.  Chain length defaults to 1 (which is fastest), but increasing this may generate more realistic text, albeit slightly more slowly.  Depending on the text, increasing the chain length past 6 or 7 words probably won't do much good -- at that point you're usually plucking out whole sentences anyway, so using a Markov model is kind of redundant.
+`$ ./sentence_generator.py [options] -i FILENAME [-i FILENAME ] | -l FILENAME`
 
-This script is Patrick Mooney's fork of [Harry R. Schwartz's Markov Sentence Generator](https://github.com/hrs/markov-sentence-generator), modified for my automated text blog *Ulysses Redux*.  HRS did the hard work here; my changes reflect adaptations to the needs of that particular project (and an opportunity to learn a bit about Python and Markov chain-based text processing). If you're looking for a generalized Markov chain implementation, Schwartz's project is more likely to be what you need, though if you want to develop this, it, like Schwartz's implementation, is licensed under the GPL, either version 3 or (at your option) any later option.
+Non-Linux users may need to drop the `./` at the beginning of that command line. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters.
+
+sentence_generator.py needs existing text to use as the basis for the text that it generates. You must either use -l to specify a file containing compiled probability data, saved with -o on a previous run, or else must specify at least one plain-text file (with -i or --input) for this purpose. If you're looking for something to play with, try passing in a book from Project Gutenberg with -i or --input. A quick reference list of options you can pass in:
+
+<table>
+<tr><td><code>-h</code></td><td><code>--help</code></td><td>Display a long help message.</td></tr>
+<tr><td><code>-v</code></td><td><code>--verbose</code></td><td>Increase how chatty the script is.</td></tr>
+<tr><td><code>-q</code></td><td><code>--quiet</code></td><td>Decrease how chatty the script is.</td></tr>
+<tr><td><code>-m NUM</code></td><td><code>--markov-length=NUM</code></td><td>Length (in words) of the Markov chains used by the program.</td></tr>
+<tr><td><code>-i FILENAME</code></td><td><code>--input=FILENAME</code></td><td>Specify an input file to use as the basis of the generated text.</td></tr>
+<tr><td><code>-l FILE</code></td><td><code>--load=FILE</code></td><td>Load generated probability data ("chains") from a previous run that have been saved with -o or --output.</td></tr>
+<tr><td><code>-o FILE</code></td><td><code>--output=FILE</code></td><td>Specify a file into which the generated probability data (the "chains") should be saved.</td></tr>
+<tr><td><code>-c NUM</code></td><td><code>--count=NUM</code></td><td>Specify how many sentences the script should generate.</td></tr>
+<tr><td><code>-w NUM</code></td><td><code>--columns=NUM</code></td><td>Currently unimplemented.</td></tr>
+<tr><td><code>-p NUM</code></td><td><code>--pause=NUM</code></td><td>Currently unimplemented.</td></tr>
+<tr><td>&nbsp;</td><td><code>--html</code></td><td>Wrap paragraphs of text output by the program with &lt;p&gt; ... &lt;/p&gt;.</td></tr> 
+</table>
+
+You can use `./sentence_generator.py --help` to get more detailed usage information. 
+
+Chain length defaults to 1 (which is fastest), but increasing this may generate more realistic text, albeit slightly more slowly.  Depending on the text, increasing the chain length past 6 or 7 words probably won't do much good -- at that point you're usually plucking out whole sentences anyway, so using a Markov model is kind of redundant.
+
+This script is Patrick Mooney's fork of [Harry R. Schwartz's Markov Sentence Generator](https://github.com/hrs/markov-sentence-generator), modified for my (forthcoming) automated text blog *Ulysses Redux*.  HRS did the hard work here; my changes reflect adaptations to the needs of that particular project (and an opportunity to learn a bit about Python and Markov chain-based text processing). It also seeks to be more generally useful as a command-line program, though the success of that project is of course a matter of opinion. If you want to develop this script, you are welcome to do so: it, like Schwartz's implementation, is licensed under the GPL, either version 3 or (at your option) any later option.
 
 A copy of [version 3 of the GPL](http://www.gnu.org/licenses/gpl-3.0.en.html) is included as the file LICENSE.md; a listing of changes is included as the file HISTORY.md.

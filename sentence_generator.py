@@ -13,10 +13,10 @@ USAGE:
 sentence_generator.py needs existing text to use as the basis for the text that
 it generates. You must either use -l to specify a file containing compiled
 probability data, saved with -o on a previous run, or else must specify at
-least one plain-text file for this purpose. 
+least one plain-text file (with -i or --input) for this purpose. 
 
-It can also be called from a Python 3 script. A typical, fairly simple use
-might be:
+It can also be imported by a Python 3 script. A typical, fairly simple use
+might be something like:
 
   #!/usr/bin/env python3
   from sentence_generator import *
@@ -64,7 +64,7 @@ COMMAND-LINE OPTIONS
       The default Markov chain length, if not overridden with this parameter,
       is one. 
 
-  -i NUM, --input=NUM
+  -i FILENAME, --input=FILENAME
       Specify an input file to use as the basis of the generated text. You can
       specify this parameter more than once; all of the files specified will be
       treated as if they were one long file containing all of the text in all
@@ -75,7 +75,12 @@ COMMAND-LINE OPTIONS
       
       You can specify -i or --input multiple times, but you cannot use both 
       -i / --input and -l / --load: you need to EITHER load pre-generated
-      probability data, OR ELSE generate it fresh from text files.
+      probability data, OR ELSE generate it fresh from plain-text files.
+      
+      sentence_generator.py ONLY understands PLAIN TEXT files (not HTML. not
+      markdown. not Microsoft Word. not mailbox files. not RTF. Just plain
+      text). Trying to feed it anything else will either fail or produce
+      unpredictable results. You've been warned.
 
   -l FILE, --load=FILE
       Load generated probability data ("chains") from a previous run that have
@@ -99,7 +104,7 @@ COMMAND-LINE OPTIONS
       chains are notably larger than the individual files.
       
       This option does NOT specify an output file into which the generated text
-      is saved. To do that, use shell redirection, for instance by doing:
+      is saved. To do that, use shell redirection, e.g. by doing:
           
           ./sentence_generator -i somefile.txt > outputfile.txt
 
