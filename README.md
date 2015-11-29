@@ -4,7 +4,7 @@ Markov Sentence Generator
 v1.1, 29 November 2015
 ----------------------
 
-This program generates a sentence's worth of "real-looking" text using a Markov model and sample textual training input.  Given some sample text from which to build a model, the program prints out a sentence based on a Markov chain.  Use it by doing something like:
+This program generates a sentence's worth of "natural-sounding" text using a Markov model and sample textual training input.  Given some sample text from which to build a model, the program prints out one or more sentences by randomly traversing a Markov chain that models the source text.  Use it from the terminal by doing something like:
 
 `$ ./sentence_generator.py [options] -i FILENAME [-i FILENAME ] | -l FILENAME`
 
@@ -13,11 +13,12 @@ Non-Linux users may need to drop the `./` at the beginning of that command line.
 sentence_generator.py needs existing text to use as the basis for the text that it generates. You must either use -l to specify a file containing compiled probability data, saved with -o on a previous run, or else must specify at least one plain-text file (with -i or --input) for this purpose. If you're looking for something to play with, try passing in a book from Project Gutenberg with -i or --input. A quick reference list of options you can pass in:
 
 <table>
+<tr><th scope="column">short form</th><th scope="column">long form</th><th scope="column">effect</th></tr>
 <tr><td><code>-h</code></td><td><code>--help</code></td><td>Display a long help message.</td></tr>
 <tr><td><code>-v</code></td><td><code>--verbose</code></td><td>Increase how chatty the script is.</td></tr>
 <tr><td><code>-q</code></td><td><code>--quiet</code></td><td>Decrease how chatty the script is.</td></tr>
-<tr><td><code>-m NUM</code></td><td><code>--markov-length=NUM</code></td><td>Length (in words) of the Markov chains used by the program.</td></tr>
-<tr><td><code>-i FILENAME</code></td><td><code>--input=FILENAME</code></td><td>Specify an input file to use as the basis of the generated text.</td></tr>
+<tr><td><code>-m NUM</code></td><td><code>--markov-length=<wbr />NUM</code></td><td>Length (in words) of the Markov chains used by the program.</td></tr>
+<tr><td><code>-i FILENAME</code></td><td><code>--input=<wbr />FILENAME</code></td><td>Specify an input file to use as the basis of the generated text.</td></tr>
 <tr><td><code>-l FILE</code></td><td><code>--load=FILE</code></td><td>Load generated probability data ("chains") from a previous run that have been saved with -o or --output.</td></tr>
 <tr><td><code>-o FILE</code></td><td><code>--output=FILE</code></td><td>Specify a file into which the generated probability data (the "chains") should be saved.</td></tr>
 <tr><td><code>-c NUM</code></td><td><code>--count=NUM</code></td><td>Specify how many sentences the script should generate.</td></tr>
