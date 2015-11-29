@@ -1,8 +1,127 @@
-#!/usr/bin/python3
-"""Patrick Mooney's Markov sentence generator, based on Harry R. Schwartz's
-Markov sentence generator. Licensed under the GPL v3+. Available on GitHub at
-https://github.com/patrick-brian-mooney/markov-sentence-generator. See
-README.md for more details.
+#!/usr/bin/env python3
+"""Patrick Mooney's Markov sentence generator: generates random (but often
+intelligible) text based on a frequency analysis of one or more existing texts.
+it is based on Harry R. Schwartz's Markov sentence generator, but is intended
+to be more flexible for use in other projects. Licensed under the GPL v3+.
+Available at https://github.com/patrick-brian-mooney/markov-sentence-generator.
+See README.md for more details.
+
+USAGE:
+
+  ./sentence_generator.py [options] -i FILENAME [-i FILENAME ] | -l FILENAME
+ 
+sentence_generator.py needs existing text to use as the basis for the text that
+it generates. You must either use -l to specify a file containing compiled
+probability data, saved with -o on a previous run, or else must specify at
+least one plain-text file for this purpose. 
+
+It can also be called from a Python 3 script. A typical, fairly simple use
+might be:
+
+  #!/usr/bin/env python3
+  from sentence_generator import *
+  starts, the_mapping = buildMapping(word_list('somefile.txt'), markov_length=2)
+  print(gen_text(the_mapping, starts, markov_length=2, sentences_desired=24))
+
+
+
+COMMAND-LINE OPTIONS
+
+  -h, --help
+      Display this help message.
+
+  -v, --verbose
+      Increase the verbosity of the script, i.e. get more output. Can be
+      specified multiple times to make the script more and more verbose.
+      Current verbosity levels are subject to change in future versions
+      of the script.
+
+  -q, --quiet
+      Decrease the verbosity of the script. You can mix -v and -q, bumping the
+      verbosity level up and down as the command line is processed, but really,
+      what are you doing with your life?
+
+  -m NUM, --markov-length=NUM
+      Length (in words) of the Markov chains used by the program. Longer chains
+      generate text "more like the original text" in many ways, (often)
+      including perceived grammatical correctness; but using longer chains also
+      means that the sentences generated "are less random," take longer to
+      generate and work with, and take more memory (and disk space) to store.
+      Optimal values depend on the source text and its characteristics, but you
+      might reasonably experiment with numbers from 1 to 4 to see what you get.
+      Larger numbers will usually result in the script just coughing up whole
+      sentences from the original source texts, which may or may not be what
+      you want.
+      
+      You cannot specify a chain length with this option if you are loading 
+      generated probability data from a previous run with -l or --load, because
+      the probability data was compiled with chains of a certain length on that
+      previous run, and that length is the length that will be used when you
+      load the data. If you need to use a different chain length, you also need
+      to re-generate the probability data by re-loading the files with -i or
+      --input.
+      
+      The default Markov chain length, if not overridden with this parameter,
+      is one. 
+
+  -i NUM, --input=NUM
+      Specify an input file to use as the basis of the generated text. You can
+      specify this parameter more than once; all of the files specified will be
+      treated as if they were one long file containing all of the text in all
+      of the input files. If you are going to be regularly calling the script
+      with the same input files, consider saving the probability data with -o,
+      then loading that data with -l on subsequent runs; loading pre-compiled
+      probability data with -l is much faster than re-generating it with -i. 
+      
+      You can specify -i or --input multiple times, but you cannot use both 
+      -i / --input and -l / --load: you need to EITHER load pre-generated
+      probability data, OR ELSE generate it fresh from text files.
+
+  -l FILE, --load=FILE
+      Load generated probability data ("chains") from a previous run that have
+      been saved with -o or --output.  Doing so is faster than re-generating
+      the data, so if you're going to be using the same data a lot, you can
+      save time by generating the data once.
+
+      You cannot both load probability chains and specify input files with (-i
+      or --input); do one or the other. You also cannot specify a Markov chain
+      length (with -m or --markov-length) when loading probability data with
+      this option, because the generated probability data forces the use of
+      chains of the same length as were specified with the data was initially
+      generated.
+
+  -o FILE, --output=FILE
+      Specify a file into which the generated probability data (the "chains")
+      should be saved. If you're going to be using the same data repeatedly,
+      saving the data and then re-loading it with the -l option is faster than
+      re-generating the data on every run by specifying the same input files
+      with -i. However, if the Markov length is greater than 1, the generated
+      chains are notably larger than the individual files.
+      
+      This option does NOT specify an output file into which the generated text
+      is saved. To do that, use shell redirection, for instance by doing:
+          
+          ./sentence_generator -i somefile.txt > outputfile.txt
+
+  -c NUM, --count=NUM
+      Specify how many sentences the script should generate. (If unspecified,
+      the default number of sentences to generate is one.)
+
+  -w NUM, --columns=NUM
+      Currently unimplemented.
+
+  -p NUM, --pause=NUM
+      Currently unimplemented.
+
+  --html
+      Wrap paragraphs of text output by the program with <p> ... </p>. It does
+      NOT generate a complete, formally valid HTML document (which would
+      involve generating a heading and title, among other things), but rather
+      generates an HTML fragment that you can insert into another HTML
+      document, as you wish. 
+
+This program is licensed under the GPL v3 or, at your option, any later
+version. See the file LICENSE.md for a copy of this licence.
 """
 
 import re
@@ -36,6 +155,11 @@ from patrick_logger import log_it, verbosity_level # From https://github.com/pat
 # Contains the set of words that can start sentences
 
 patrick_logger.verbosity_level = 0
+
+def print_usage():
+    """Print a usage message to the terminal"""
+    patrick_logger.log_it("INFO: print_usage() was called")
+    print(__doc__)
 
 def fix_caps(word):
     """We want to be able to compare words independent of their capitalization."""
@@ -168,13 +292,14 @@ def read_chains(filename):
         log_it("ERROR: Can't read chains from %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0) 
     return chains_dictionary['markov_length'], chains_dictionary['the_starts'], chains_dictionary['the_mapping']
 
-def print_usage():
-    """Print a usage message. Currently does nothing."""
-    pass
-
 def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=False, paragraph_break_probability = 0.25):
-    """actually generate the text."""
+    """Actually generate the text."""
+    log_it("gen_text() called.", 1)
+    log_it("  Markov length is %d; requesting %d sentences." % (markov_length, sentences_desired), 2)
+    log_it("  Legitimate starts: %s" % starts, 3)
+    log_it("  Probability data: %s" % the_mapping, 4)
     if is_html:
+        log_it("  -- and we're generating HTML.", 2)
         the_text = "<p>"
     else:
         the_text = ""
@@ -201,7 +326,7 @@ def main():
     chains_file = ''
     starts = None
     the_mapping = None
-    sentences_desired = 0
+    sentences_desired = 1
     inputs = [].copy()
     is_html = False
     # First, parse command-line options, if there are any
