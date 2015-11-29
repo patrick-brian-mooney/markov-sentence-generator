@@ -157,8 +157,7 @@ def store_chains(markov_length, the_starts, the_mapping, filename):
         log_it("ERROR: Can't write chains to %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0) 
 
 def read_chains(filename):
-    """Shove the relevant chain-based data into a dictionary, then pickle it and store
-    it in the designated file."""
+    """Read the pickled chain-based data from a chains file."""
     try:
         the_chains_file = open(filename, 'rb')
         chains_dictionary = pickle.load(the_chains_file)
@@ -170,8 +169,31 @@ def read_chains(filename):
     return chains_dictionary['markov_length'], chains_dictionary['the_starts'], chains_dictionary['the_mapping']
 
 def print_usage():
-    """Print a usage message. Currently, nothing here."""
+    """Print a usage message. Currently does nothing."""
     pass
+
+def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=False, paragraph_break_probability = 0.25):
+    """actually generate the text."""
+    if is_html:
+        the_text = "<p>"
+    else:
+        the_text = ""
+    if sentences_desired > 0:
+        for which_sentence in range(0,sentences_desired):
+            try:
+                if the_text[-1] != "\n" and the_text[-3:] != "<p>":
+                    the_text = the_text + " "   # Add a space to the end if we're not starting a new paragraph.
+            except IndexError:
+                pass        # If the string is so far empty, well, just move forward. We don't need to add a space to the beginning of the text, anyway.
+            the_text = the_text + genSentence(markov_length, the_mapping, starts)
+            if random.random() <= paragraph_break_probability:
+                if is_html:
+                    the_text = the_text.strip() + "</p>\n\n<p>"
+                else:
+                    the_text = the_text.strip() + "\n\n"
+    if is_html:
+        the_text = the_text + "</p>"
+    return the_text
 
 def main():
     # Set up variables for this run
@@ -181,6 +203,7 @@ def main():
     the_mapping = None
     sentences_desired = 0
     inputs = [].copy()
+    is_html = False
     # First, parse command-line options, if there are any
     if len(sys.argv) > 1: # The first option in argv, of course, is the name of the program itself.
         try:
@@ -192,7 +215,7 @@ def main():
             sys.exit(2)
         log_it('INFO: detected number of command-line arguments is %d.' % len(sys.argv), 2)
         for opt, args in opts:
-            log_it('Processing option ' + str(opt), 2)
+            log_it('Processing option %s.' % opt, 2)
             if opt in ('-h', '--help'):
                 log_it('INFO: %s invoked, printing usage message.' % opt)
                 print_usage()
@@ -216,10 +239,10 @@ def main():
                 if markov_length == 1:
                     markov_length, the_starts, the_mapping = read_chains(args)
                 else:
-                    log_it("ERROR: you cannot both specify a chains file with -m and also load a chains file\nwith -l. If you specify -l, that file contains the Markov chain length.")
+                    log_it("ERROR: you cannot both specify a chains file with -m and also load a chains file\nwith -l. If you specify a file with -l, that file contains the chain length.")
                     sys.exit(2)     
             elif opt in ('-c', '--count'):
-                sentences_desired = args    # How many sentences to generate (0 is "keep working until interrupted").
+                sentences_desired = int(args)    # How many sentences to generate (0 is "keep working until interrupted").
             elif opt in ('-i', '--input'):
                 log_it("  -i specified with argument %s." % args)
                 inputs.append(args)
@@ -228,12 +251,10 @@ def main():
             elif opt in ('-p', '--pause'):
                 pass    # How many seconds to pause between paragraphs. Currently unimplemented.
             elif opt == '--html':
-                pass    # Output HTML instead of plain text. Currently unimplemented.
+                is_html = True    # Wrap paragraphs of text that are output in <p> ... </p>.
     else:
         log_it('DEBUGGING: No command-line parameters', 2)
-    
     log_it('DEBUGGING: verbosity_level after parsing command line is %d.' % patrick_logger.verbosity_level, 2)
-
     if starts == None or the_mapping == None:     # then no chains file was loaded.
         log_it("INFO: No chains file specified; parsing text files specified.", 1)
         log_it("  ... input files specified are %s." % inputs, 1)
@@ -246,10 +267,10 @@ def main():
             starts, the_mapping = buildMapping(all_words, markov_length)
             if chains_file:
                 store_chains(markov_length, starts, the_mapping, chains_file)
-    if starts == None or the_mapping == None:     # Ridiculous! We must have SOMETHING to work with
+    if starts == None or the_mapping == None:     # Ridiculous! We must have SOMETHING to work with.
         log_it("ERROR: You must specify a chains file with -l, or else at least one text file with -i.")
         sys.exit(2)
-    print(genSentence(markov_length, the_mapping, starts))
+    print(gen_text(the_mapping, starts, markov_length, sentences_desired, is_html))
 
 if __name__ == "__main__":
     main()
