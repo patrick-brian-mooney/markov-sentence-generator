@@ -75,7 +75,11 @@ COMMAND-LINE OPTIONS
       
       You can specify -i or --input multiple times, but you cannot use both 
       -i / --input and -l / --load: you need to EITHER load pre-generated
-      probability data, OR ELSE generate it fresh from plain-text files.
+      probability data, OR ELSE generate it fresh from plain-text files. (The
+      reason for this is that, once all of the input files have been processed,
+      the program discards some data that would be necessary to combine the
+      file with other files in order to process the chains more efficiently,
+      and it is these postprocessed chains that are saved with -o / --output.)
       
       sentence_generator.py ONLY understands PLAIN TEXT files (not HTML. not
       markdown. not Microsoft Word. not mailbox files. not RTF. Just plain
@@ -241,13 +245,17 @@ def next(prevList, the_mapping):
     retval = ""
     index = random.random()
     # Shorten prevList until it's in the_mapping
-    while to_hash_key(prevList) not in the_mapping:
-        prevList.pop(0)
-    # Get a random word from the_mapping, given prevList
-    for k, v in the_mapping[to_hash_key(prevList)].items():
-        sum += v
-        if sum >= index and retval == "":
-            retval = k
+    try:
+        while to_hash_key(prevList) not in the_mapping:
+            prevList.pop(0)
+    except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence there to force us to start over.
+        retval = "."
+    # Get a random word from the_mapping, given prevList, if prevList isn't empty
+    else:
+        for k, v in the_mapping[to_hash_key(prevList)].items():
+            sum += v
+            if sum >= index and retval == "":
+                retval = k
     return retval
 
 def genSentence(markov_length, the_mapping, starts):
