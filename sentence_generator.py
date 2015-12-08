@@ -49,9 +49,9 @@ COMMAND-LINE OPTIONS
       generate and work with, and take more memory (and disk space) to store.
       Optimal values depend on the source text and its characteristics, but you
       might reasonably experiment with numbers from 1 to 4 to see what you get.
-      Larger numbers will usually result in the script just coughing up whole
-      sentences from the original source texts, which may or may not be what
-      you want.
+      Larger numbers will increasingly result in the script just coughing up
+      whole sentences from the original source texts, which may or may not be
+      what you want.
       
       You cannot specify a chain length with this option if you are loading 
       generated probability data from a previous run with -l or --load, because
@@ -140,8 +140,8 @@ import pickle
 import getopt
 import pprint
 
-import patrick_logger
-from patrick_logger import log_it, verbosity_level # From https://github.com/patrick-brian-mooney/personal-library
+import patrick_logger  # From https://github.com/patrick-brian-mooney/personal-library
+from patrick_logger import log_it
 
 
 # Schwartz's version stored mappings globally to save copying time, but this
@@ -227,8 +227,8 @@ def buildMapping(word_list, markov_length):
         else:
             history = word_list[i - markov_length + 1 : i + 1]
         follow = word_list[i + 1]
-        # if the last elt was a period, add the next word to the start list
-        if history[-1] == "." and follow not in ".,!?;":
+        # if the last elt was a sentence-ending punctuation, add the next word to the start list
+        if history[-1] in ".!?" and follow not in ".,!?;":
             starts.append(follow)
         addItemToTempMapping(history, follow, the_temp_mapping)
     # Normalize the values in the_temp_mapping, put them into mapping
@@ -260,10 +260,10 @@ def next(prevList, the_mapping):
 
 def genSentence(markov_length, the_mapping, starts):
     '''Start with a random "starting word"'''
-    log_it("genSentence() called.", 2)
-    log_it("  markov_length = %d." % markov_length, 4)
-    log_it("  the_mapping = %s." % the_mapping, 4)
-    log_it("  starts = %s." % starts, 4)
+    log_it("      genSentence() called.", 4)
+    log_it("        markov_length = %d." % markov_length, 5)
+    log_it("        the_mapping = %s." % the_mapping, 5)
+    log_it("        starts = %s." % starts, 5)
     curr = random.choice(starts)
     sent = curr.capitalize()
     prevList = [curr]
@@ -307,12 +307,12 @@ def read_chains(filename):
 
 def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=False, paragraph_break_probability = 0.25):
     """Actually generate the text."""
-    log_it("gen_text() called.", 1)
-    log_it("  Markov length is %d; requesting %d sentences." % (markov_length, sentences_desired), 2)
-    log_it("  Legitimate starts: %s" % starts, 3)
-    log_it("  Probability data: %s" % the_mapping, 4)
+    log_it("gen_text() called.", 4)
+    log_it("  Markov length is %d; requesting %d sentences." % (markov_length, sentences_desired), 4)
+    log_it("  Legitimate starts: %s" % starts, 5)
+    log_it("  Probability data: %s" % the_mapping, 5)
     if is_html:
-        log_it("  -- and we're generating HTML.", 2)
+        log_it("  -- and we're generating an HTML fragment.", 3)
         the_text = "<p>"
     else:
         the_text = ""
@@ -342,10 +342,12 @@ def main():
     sentences_desired = 1
     inputs = [].copy()
     is_html = False
-    # First, parse command-line options, if there are any
+    # Next, parse command-line options, if there are any
     if len(sys.argv) > 1: # The first option in argv, of course, is the name of the program itself.
         try:
-            opts, args = getopt.getopt(sys.argv[1:], 'vhqo:l:c:w:p:i:m:', ['verbose', 'help', 'quiet', 'output=', 'load=', 'count=', 'columns=', 'pause=', 'html', 'input=', 'markov-length='])
+            opts, args = getopt.getopt(sys.argv[1:], 'vhqo:l:c:w:p:i:m:',
+                    ['verbose', 'help', 'quiet', 'output=', 'load=', 'count=',
+                    'columns=', 'pause=', 'html', 'input=', 'markov-length='])
             log_it('INFO: options returned from getopt.getopt() are: ' + pprint.pformat(opts), 2)
         except getopt.GetoptError:
             log_it('ERROR: Bad command-line arguments; exiting to shell')
