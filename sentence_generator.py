@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Patrick Mooney's Markov sentence generator: generates random (but often
 intelligible) text based on a frequency analysis of one or more existing texts.
-it is based on Harry R. Schwartz's Markov sentence generator, but is intended
-to be more flexible for use in other projects. Licensed under the GPL v3+.
-Available at https://github.com/patrick-brian-mooney/markov-sentence-generator.
-See README.md for more details.
+It is based on Harry R. Schwartz's Markov sentence generator, but is intended
+to be more flexible for use in other projects (primarily my automated text blog,
+UlyssesRedux). Licensed under the GPL v3+. Available at
+https://github.com/patrick-brian-mooney/markov-sentence-generator. See README.md
+for more details.
 
 USAGE:
 
@@ -171,7 +172,11 @@ def print_usage():
     print(__doc__)
 
 def fix_caps(word):
-    """We want to be able to compare words independent of their capitalization."""
+    """HRS initially said:
+    We want to be able to compare words independent of their capitalization.
+    
+    I disagree, though, so I'm commenting out this routine to see how that plays
+    out.
     # Ex: "FOO" -> "foo"
     if word.isupper() and word != "I":
         word = word.lower()
@@ -181,6 +186,7 @@ def fix_caps(word):
         # Ex: "wOOt" -> "woot"
     else:
         word = word.lower()
+    """
     return word
 
 def to_hash_key(lst):
@@ -193,7 +199,8 @@ def word_list(filename):
     """Returns the contents of the file, split into a list of words and
     (some) punctuation."""
     the_file = open(filename, 'r')
-    word_list = [fix_caps(w) for w in re.findall(r"[\w']+|[.,!?;]", the_file.read())]
+    word_list = [fix_caps(w) for w in re.findall(r"[\w']+|[.,!?;—․]", the_file.read())]
+    # Note that last character is U+2024, "one-dot leader"; I substitute it in for a non-sentence-ending-period sometimes.
     the_file.close()
     return word_list
 
@@ -268,13 +275,13 @@ def genSentence(markov_length, the_mapping, starts):
     sent = curr.capitalize()
     prevList = [curr]
     # Keep adding words until we hit a period
-    while curr not in ".":
+    while curr not in ".?!":
         curr = next(prevList, the_mapping)
         prevList.append(curr)
         # if the prevList has gotten too long, trim it
         if len(prevList) > markov_length:
             prevList.pop(0)
-        if curr not in ".,!?;":
+        if curr not in ".,!?;—․":
             sent += " " # Add spaces between words (but not punctuation)
         sent += curr
     return sent
@@ -317,7 +324,7 @@ def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=
     else:
         the_text = ""
     if sentences_desired > 0:
-        for which_sentence in range(0,sentences_desired):
+        for which_sentence in range(0, sentences_desired):
             try:
                 if the_text[-1] != "\n" and the_text[-3:] != "<p>":
                     the_text = the_text + " "   # Add a space to the end if we're not starting a new paragraph.
