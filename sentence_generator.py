@@ -126,10 +126,10 @@ COMMAND-LINE OPTIONS
       Currently unimplemented.
 
   --html
-      Wrap paragraphs of text output by the program with <p> ... </p>. It does
-      NOT generate a complete, formally valid HTML document (which would
-      involve generating a heading and title, among other things), but rather
-      generates an HTML fragment that you can insert into another HTML
+      Wrap paragraphs of text output by the program with HTML paragraph tags.
+      It does NOT generate a complete, formally valid HTML document (which
+      would involve generating a heading and title, among other things), but
+      rather generates an HTML fragment that you can insert into another HTML
       document, as you wish. 
 
 This program is licensed under the GPL v3 or, at your option, any later
@@ -346,7 +346,7 @@ def main():
     # Set up variables for this run
     if not sys.stdout.isatty(): # Then assume we're running on a web server; output some help text 
         print('Content-type: text/html\n\n')
-        print("""<!doctype html><html><head><title>Patrick Mooney's Markov chain–based text generator</title><link rel="profile" href="http://gmpg.org/xfn/11" /></head><body><h1>Patrick Mooney's Markov chain–based text generator</h1><p>Code is available <a rel="muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator">here</a>.</p></body>""")
+        print("""<!doctype html><html><head><title>Patrick Mooney's Markov chain–based text generator</title><link rel="profile" href="http://gmpg.org/xfn/11" /></head><body><h1>Patrick Mooney's Markov chain–based text generator</h1><p>Code is available <a rel="muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator">here</a>.</p><pre>%s</pre></body></html>"""% __doc__)
         sys.exit(0)
     markov_length = 1
     chains_file = ''
