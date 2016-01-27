@@ -344,6 +344,10 @@ def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=
 
 def main():
     # Set up variables for this run
+    if not sys.stdout.isatty(): # Then assume we're running on a web server; output some help text 
+        print('Content-type: text/html\n\n')
+        print("""<!doctype html><html><head><title>Patrick Mooney's Markov chain–based text generator</title><link rel="profile" href="http://gmpg.org/xfn/11" /></head><body><h1>Patrick Mooney's Markov chain–based text generator</h1><p>Code is available <a rel="muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator">here</a>.</p></body>""")
+        sys.exit(0)
     markov_length = 1
     chains_file = ''
     starts = None
@@ -403,6 +407,7 @@ def main():
                 is_html = True    # Wrap paragraphs of text that are output in <p> ... </p>.
     else:
         log_it('DEBUGGING: No command-line parameters', 2)
+        print_usage()
     log_it('DEBUGGING: verbosity_level after parsing command line is %d.' % patrick_logger.verbosity_level, 2)
     if starts == None or the_mapping == None:     # then no chains file was loaded.
         log_it("INFO: No chains file specified; parsing text files specified.", 1)
