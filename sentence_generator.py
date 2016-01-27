@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """Patrick Mooney's Markov sentence generator: generates random (but often
 intelligible) text based on a frequency analysis of one or more existing texts.
 It is based on Harry R. Schwartz's Markov sentence generator, but is intended
