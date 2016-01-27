@@ -18,3 +18,8 @@ v1.1, 29 November 2015
 * Added a more comprehensive usage message.
 * Added ability to store (-o) and load (-l) chains instead of creating them from scratch; this may help when runnng multiple times over the same text(s).
 * Added ability to add multiple texts with -i or --input.
+
+v1.1, 27 January 2016
+---------------------
+* Minor tweaks have happened here and there; I keep forgetting to update this HISTORY.md document.
+* Added coding declaration.
