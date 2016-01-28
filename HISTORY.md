@@ -22,4 +22,8 @@ v1.1, 29 November 2015
 v1.1, 27 January 2016
 ---------------------
 * Minor tweaks have happened here and there; I keep forgetting to update this HISTORY.md document.
-* Added coding declaration.
+* Added encoding declaration.
+
+v 1.1, 29 January 2016
+----------------------
+* Expanding what counds as punctuation tokens.
