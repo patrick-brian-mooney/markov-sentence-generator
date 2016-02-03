@@ -24,11 +24,14 @@ v1.1, 27 January 2016
 * Minor tweaks have happened here and there; I keep forgetting to update this HISTORY.md document.
 * Added encoding declaration.
 
-v 1.1, 29 January 2016
+v1.1, 29 January 2016
 ----------------------
 * Expanding what counds as punctuation tokens.
 
 v1.1, 2 February 2016
 ---------------------
-
 Still tweaking punctuation settings.
+
+v1.1, 3 February 2016.
+----------------------
+Pulled regex patterns to the front of the file, as constants. (Well, Python doesn't really have constants. Still.) Still tweaking the "what counts as a word?" question.
