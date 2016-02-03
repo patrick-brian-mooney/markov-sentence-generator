@@ -296,7 +296,7 @@ def genSentence(markov_length, the_mapping, starts):
         # if the prevList has gotten too long, trim it
         if len(prevList) > markov_length:
             prevList.pop(0)
-        if curr not in punct_with_no_space_before and prevList[-2] not in punct_with_no_space_after:
+        if curr not in punct_with_no_space_before and (len(prevList) < 2 or prevList[-2] not in punct_with_no_space_after):     # reminder: Python short-circuits
             sent += " " # Add spaces between words (but not punctuation)
         sent += curr
     return sent
