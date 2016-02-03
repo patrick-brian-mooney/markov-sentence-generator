@@ -136,16 +136,30 @@ This program is licensed under the GPL v3 or, at your option, any later
 version. See the file LICENSE.md for a copy of this licence.
 """
 
-import re
-import random
-import sys
-import pickle
-import getopt
-import pprint
+import re, random, sys, pickle, getopt, pprint
 
 import patrick_logger  # From https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
+# Set up some constants
+patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
+# "are we running on a webserver?" check.
+
+punct_with_space_after = r'.,\:!?;'
+sentence_ending_punct = r'.!?'
+punct_with_no_space_before = r'.,!?;—․\-'
+punct_with_no_space_after = r'—\-․'     # Note that last character is U+2024, "one-dot leader".
+word_punct = r"'’❲❳"  # Punctuation marks to be considered part of a word.
+token_punct = r".,\:\-!?;—"             # These punctuation marks also count as tokens.
+
+final_substitutions = [     # list of lists: each [search_string, replace_string]
+    ['...', '…'],
+    ['․', '.'],             # replace one-dot leader with period
+    ['..', '.'],
+    [" ' ", ''],
+    ["\n' ", ''],
+    ["<p>'", '<p>']
+]
 
 # Schwartz's version stored mappings globally to save copying time, but this
 # makes the code less flexible for my purposes; still, I've kept his
@@ -165,8 +179,6 @@ from patrick_logger import log_it
 
 # starts: a list of words that can begin sentences. Initially an empty list, []
 # Contains the set of words that can start sentences
-
-patrick_logger.verbosity_level = 0
 
 def print_usage():
     """Print a usage message to the terminal"""
@@ -202,8 +214,7 @@ def word_list(filename):
     """Returns the contents of the file, split into a list of words and
     (some) punctuation."""
     the_file = open(filename, 'r')
-    word_list = [fix_caps(w) for w in re.findall(r"[\w']+|[.,\:\-!?;—․]", the_file.read())]
-    # Note that last character is U+2024, "one-dot leader"; I substitute it in for a non-sentence-ending-period sometimes.
+    word_list = [fix_caps(w) for w in re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_file.read())]
     the_file.close()
     return word_list
 
@@ -238,7 +249,7 @@ def buildMapping(word_list, markov_length):
             history = word_list[i - markov_length + 1 : i + 1]
         follow = word_list[i + 1]
         # if the last elt was a sentence-ending punctuation, add the next word to the start list
-        if history[-1] in ".!?" and follow not in ".,\:\-!?;—․":
+        if history[-1] in sentence_ending_punct and follow not in punct_with_space_after:
             starts.append(follow)
         addItemToTempMapping(history, follow, the_temp_mapping)
     # Normalize the values in the_temp_mapping, put them into mapping
@@ -258,7 +269,8 @@ def next(prevList, the_mapping):
     try:
         while to_hash_key(prevList) not in the_mapping:
             prevList.pop(0)
-    except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence there to force us to start over.
+    except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence to
+        # force us to start a new sentence.
         retval = "."
     # Get a random word from the_mapping, given prevList, if prevList isn't empty
     else:
@@ -277,14 +289,14 @@ def genSentence(markov_length, the_mapping, starts):
     curr = random.choice(starts)
     sent = curr.capitalize()
     prevList = [curr]
-    # Keep adding words until we hit a period
-    while curr not in ".?!":
+    # Keep adding words until we hit a period, exclamation point, or question mark
+    while curr not in sentence_ending_punct:
         curr = next(prevList, the_mapping)
         prevList.append(curr)
         # if the prevList has gotten too long, trim it
         if len(prevList) > markov_length:
             prevList.pop(0)
-        if curr not in ".,!?;—․":
+        if curr not in punct_with_no_space_before and prevList[-2] not in punct_with_no_space_after:
             sent += " " # Add spaces between words (but not punctuation)
         sent += curr
     return sent
@@ -341,6 +353,8 @@ def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=
                     the_text = the_text.strip() + "\n\n"
     if is_html:
         the_text = the_text + "</p>"
+    for which_replacement in final_substitutions:
+        the_text = the_text.replace(which_replacement[0], which_replacement[1])
     return the_text
 
 def main():

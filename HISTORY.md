@@ -27,3 +27,8 @@ v1.1, 27 January 2016
 v 1.1, 29 January 2016
 ----------------------
 * Expanding what counds as punctuation tokens.
+
+v1.1, 2 February 2016
+---------------------
+
+Still tweaking punctuation settings.
