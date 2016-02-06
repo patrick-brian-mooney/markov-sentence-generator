@@ -142,17 +142,18 @@ import patrick_logger  # From https://github.com/patrick-brian-mooney/personal-l
 from patrick_logger import log_it
 
 # Set up some constants
-patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
+patrick_logger.verbosity_level = 0  # Bump above zero to get more verbose messages about processing and to skip the
 # "are we running on a webserver?" check.
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
 punct_with_no_space_before = r'.,!?;—․\-\:'
 punct_with_no_space_after = r'—\-․'     # Note that last character is U+2024, "one-dot leader".
-word_punct = r"'’❲❳%"  # Punctuation marks to be considered part of a word.
+word_punct = r"'’❲❳%"                   # Punctuation marks to be considered part of a word.
 token_punct = r".,\:\-!?;—"             # These punctuation marks also count as tokens.
 
 final_substitutions = [     # list of lists: each [search_string, replace_string]
+    ['--', '—'],
     ['...', '…'],
     ['․', '.'],             # replace one-dot leader with period
     ['..', '.'],
@@ -182,16 +183,18 @@ final_substitutions = [     # list of lists: each [search_string, replace_string
 
 def print_usage():
     """Print a usage message to the terminal"""
-    patrick_logger.log_it("INFO: print_usage() was called")
+    patrick_logger.log_it("INFO: print_usage() was called", 2)
     print('\n\n')
     print(__doc__)
 
 def fix_caps(word):
     """HRS initially said:
-    We want to be able to compare words independent of their capitalization.
+    "We want to be able to compare words independent of their capitalization."
 
     I disagree, though, so I'm commenting out this routine to see how that plays
     out.
+    
+    Schwartz further said:
     # Ex: "FOO" -> "foo"
     if word.isupper() and word != "I":
         word = word.lower()
