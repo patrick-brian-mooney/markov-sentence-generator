@@ -147,18 +147,20 @@ patrick_logger.verbosity_level = 0  # Bump above zero to get more verbose messag
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
-punct_with_no_space_before = r'.,!?;—․\-\:'
-punct_with_no_space_after = r'—\-․'     # Note that last character is U+2024, "one-dot leader".
+punct_with_no_space_before = r'.,!?;—․\-\:\/'
+punct_with_no_space_after = r'—\-\/․'   # Note that last character is U+2024, "one-dot leader".
 word_punct = r"'’❲❳%"                   # Punctuation marks to be considered part of a word.
-token_punct = r".,\:\-!?;—"             # These punctuation marks also count as tokens.
+token_punct = r".,\:\-!?;—\/"           # These punctuation marks also count as tokens.
 
-final_substitutions = [     # list of lists: each [search_string, replace_string]
+final_substitutions = [     # list of lists: each [search_string, replace_string]. Substitutions occur in order specified.
     ['--', '—'],
     ['...', '…'],
     ['․', '.'],             # replace one-dot leader with period
     ['..', '.'],
     [" ' ", ''],
-    ["\n' ", ''],
+    ['―-', '―'],
+    [':—', ': '],
+    ["\n' ", '\n'],           # newline--single quote--space
     ["<p>'", '<p>']
 ]
 
