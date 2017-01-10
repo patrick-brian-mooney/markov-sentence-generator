@@ -138,19 +138,20 @@ version. See the file LICENSE.md for a copy of this licence.
 
 import re, random, sys, pickle, getopt, pprint
 
-import patrick_logger  # From https://github.com/patrick-brian-mooney/personal-library
+import patrick_logger       # From https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
+import text_handling as th  # https://github.com/patrick-brian-mooney/python-personal-library/blob/master/text_handling.py
 
 # Set up some constants
 patrick_logger.verbosity_level = 0  # Bump above zero to get more verbose messages about processing and to skip the
-# "are we running on a webserver?" check.
+                                    # "are we running on a webserver?" check.
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
 punct_with_no_space_before = r'.,!?;—․\-\:\/'
-punct_with_no_space_after = r'—\-\/․'   # Note that last character is U+2024, "one-dot leader".
-word_punct = r"'’❲❳%"                   # Punctuation marks to be considered part of a word.
-token_punct = r".,\:\-!?;—\/"           # These punctuation marks also count as tokens.
+punct_with_no_space_after = r'—\-\/․'           # Note that last character is U+2024, "one-dot leader".
+word_punct = r"'’❲❳%°"                          # Punctuation marks to be considered part of a word.
+token_punct = r".,\:\-!?;—\/"                   # These punctuation marks also count as tokens.
 
 final_substitutions = [     # list of lists: each [search_string, replace_string]. Substitutions occur in order specified.
     ['--', '—'],
@@ -160,8 +161,10 @@ final_substitutions = [     # list of lists: each [search_string, replace_string
     [" ' ", ''],
     ['―-', '―'],
     [':—', ': '],
-    ["\n' ", '\n'],           # newline--single quote--space
-    ["<p>'", '<p>']
+    ["\n' ", '\n'],         # newline--single quote--space
+    ["<p>'", '<p>'],
+    ['- ', '-'],
+    ['—-', '—'],            # em dash-hyphen to em dash 
 ]
 
 # Schwartz's version stored mappings globally to save copying time, but this
@@ -202,7 +205,7 @@ def fix_caps(word):
         word = word.lower()
         # Ex: "LaTeX" => "Latex"
     elif word[0].isupper():
-        word = word.lower().capitalize()
+        word = th.capitalize(word.lower())
         # Ex: "wOOt" -> "woot"
     else:
         word = word.lower()
@@ -227,8 +230,10 @@ def addItemToTempMapping(history, word, the_temp_mapping):
     '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
     the_temp_mapping (and the_mapping) both match each word to a list of possible next
     words.
+    
     Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
-    the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].'''
+    the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
+    '''
     while len(history) > 0:
         first = to_hash_key(history)
         if first in the_temp_mapping:
@@ -242,7 +247,7 @@ def addItemToTempMapping(history, word, the_temp_mapping):
         history = history[1:]
 
 def buildMapping(word_list, markov_length):
-    """Building and normalizing the_mapping."""
+    """Build and normalize the_mapping."""
     the_temp_mapping = {}
     the_mapping = {}
     starts = []
@@ -292,7 +297,7 @@ def genSentence(markov_length, the_mapping, starts):
     log_it("        the_mapping = %s." % the_mapping, 5)
     log_it("        starts = %s." % starts, 5)
     curr = random.choice(starts)
-    sent = curr.capitalize()
+    sent = th.capitalize(curr)
     prevList = [curr]
     # Keep adding words until we hit a period, exclamation point, or question mark
     while curr not in sentence_ending_punct:
