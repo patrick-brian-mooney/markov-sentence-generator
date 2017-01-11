@@ -150,7 +150,7 @@ punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
 punct_with_no_space_before = r'.,!?;—․\-\:\/'
 punct_with_no_space_after = r'—\-\/․'           # Note that last character is U+2024, "one-dot leader".
-word_punct = r"'’❲❳%°"                          # Punctuation marks to be considered part of a word.
+word_punct = r"'’❲❳%°#"                         # Punctuation marks to be considered part of a word.
 token_punct = r".,\:\-!?;—\/"                   # These punctuation marks also count as tokens.
 
 final_substitutions = [     # list of lists: each [search_string, replace_string]. Substitutions occur in order specified.
@@ -164,7 +164,7 @@ final_substitutions = [     # list of lists: each [search_string, replace_string
     ["\n' ", '\n'],         # newline--single quote--space
     ["<p>'", '<p>'],
     ['- ', '-'],
-    ['—-', '—'],            # em dash-hyphen to em dash 
+    ['—-', '—'],            # em dash-hyphen to em dash
 ]
 
 # Schwartz's version stored mappings globally to save copying time, but this
@@ -198,7 +198,7 @@ def fix_caps(word):
 
     I disagree, though, so I'm commenting out this routine to see how that plays
     out.
-    
+
     Schwartz further said:
     # Ex: "FOO" -> "foo"
     if word.isupper() and word != "I":
@@ -230,7 +230,7 @@ def addItemToTempMapping(history, word, the_temp_mapping):
     '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
     the_temp_mapping (and the_mapping) both match each word to a list of possible next
     words.
-    
+
     Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
     the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
     '''
@@ -369,8 +369,8 @@ def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=
 
 def main():
     # Set up variables for this run
-    if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1): # Assume we're running on a web server.
-        print('Content-type: text/html\n\n')
+    if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
+        print('Content-type: text/html\n\n')                                # ... print HTTP headers, then documentation.
         print("""<!doctype html><html><head><title>Patrick Mooney's Markov chain–based text generator</title><link rel="profile" href="http://gmpg.org/xfn/11" /></head><body><h1>Patrick Mooney's Markov chain–based text generator</h1><p>Code is available <a rel="muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator">here</a>.</p><pre>%s</pre></body></html>"""% __doc__)
         sys.exit(0)
     markov_length = 1
