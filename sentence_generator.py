@@ -150,7 +150,7 @@ punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
 punct_with_no_space_before = r'.,!?;—․\-\:\/'
 punct_with_no_space_after = r'—\-\/․'           # Note that last character is U+2024, "one-dot leader".
-word_punct = r"'’❲❳%°#"                         # Punctuation marks to be considered part of a word.
+word_punct = r"'’❲❳%°#․"                        # Punctuation marks to be considered part of a word.
 token_punct = r".,\:\-!?;—\/"                   # These punctuation marks also count as tokens.
 
 final_substitutions = [     # list of lists: each [search_string, replace_string]. Substitutions occur in order specified.
@@ -185,6 +185,31 @@ final_substitutions = [     # list of lists: each [search_string, replace_string
 
 # starts: a list of words that can begin sentences. Initially an empty list, []
 # Contains the set of words that can start sentences
+
+
+# print(process_acronyms(text))
+def process_acronyms(text):
+    """Takes TEXT and looks through it for acronyms. If it finds any, it takes each
+    and converts their periods to one-dot leaders to make the Markov parser treat
+    it as a single word.
+
+    This function is NEVER called directly by any other routine in this file;
+    it's a convenience function for code that calls this code.
+
+    #FIXME: current problem: sentence-ending acronyms are not identified as acronyms.
+    """
+    remaining_to_process = text[:]
+    ret = ""
+    while remaining_to_process:
+        match = re.search(r'(?:(?<=\.|\s)[A-Z]\.)+', remaining_to_process)
+        if match:
+            ret += remaining_to_process[:match.start()]
+            ret += remaining_to_process[match.start():match.end()].replace('.', '․')        # Replace periods with one-dot leaders
+            remaining_to_process = remaining_to_process[match.end():]   # Lop off the part we've processed.
+        else:
+            ret += remaining_to_process
+            remaining_to_process = ""
+    return ret
 
 def print_usage():
     """Print a usage message to the terminal"""
@@ -221,10 +246,8 @@ def to_hash_key(lst):
 def word_list(filename):
     """Returns the contents of the file, split into a list of words and
     (some) punctuation."""
-    the_file = open(filename, 'r')
-    word_list = [fix_caps(w) for w in re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_file.read())]
-    the_file.close()
-    return word_list
+    with open(filename, 'r') as the_file:
+        return [fix_caps(w) for w in re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_file.read())]
 
 def addItemToTempMapping(history, word, the_temp_mapping):
     '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
