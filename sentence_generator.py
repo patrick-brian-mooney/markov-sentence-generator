@@ -196,12 +196,28 @@ def process_acronyms(text):
     This function is NEVER called directly by any other routine in this file;
     it's a convenience function for code that calls this code.
 
-    #FIXME: current problem: sentence-ending acronyms are not identified as acronyms.
     """
     remaining_to_process = text[:]
     ret = ""
+
+    # First, search for and deal with sentence-ending acronyms. Doing this requires replacing their dots with a
+    # one-dot leader, and then adding a sentence-ending period so the chain parser knows that there's sentence-ending
+    # punctuation in the text.
     while remaining_to_process:
-        match = re.search(r'(?:(?<=\.|\s)[A-Z]\.)+', remaining_to_process)
+        match = re.search(r'([A-Z]\.){2,}\s[A-Z]', remaining_to_process, re.UNICODE)
+        if match:
+            ret += remaining_to_process[:match.start()]
+            last_period = remaining_to_process[match.start():match.end()].rfind('.')
+            ret += remaining_to_process[match.start():match.start()+last_period].replace('.', '․') + '.' + remaining_to_process[match.start()+last_period:match.end()]
+            remaining_to_process = remaining_to_process[match.end():]
+        else:
+            ret += remaining_to_process
+            remaining_to_process = ""
+
+    # Now, deal with any remaining unprocessed acronyms.
+    remaining_to_process, ret = ret, ""
+    while remaining_to_process:
+        match = re.search(r'(?:(?<=\.|\s)[A-Z]\.)+', remaining_to_process, re.UNICODE)
         if match:
             ret += remaining_to_process[:match.start()]
             ret += remaining_to_process[match.start():match.end()].replace('.', '․')        # Replace periods with one-dot leaders
