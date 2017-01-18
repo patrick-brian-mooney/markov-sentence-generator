@@ -61,8 +61,8 @@ COMMAND-LINE OPTIONS
       the probability data was compiled with chains of a certain length on that
       previous run, and that length is the length that will be used when you
       load the data. If you need to use a different chain length, you also need
-      to re-generate the probability data by re-loading the files with -i or
-      --input.
+      to re-generate the probability data by re-loading the  original source files
+      with -i or --input.
 
       The default Markov chain length, if not overridden with this parameter,
       is one.
@@ -96,7 +96,8 @@ COMMAND-LINE OPTIONS
       save time by generating the data once.
 
       You cannot both load probability chains and specify input files with (-i
-      or --input); do one or the other. You also cannot specify a Markov chain
+      or --input); do one or the other. You also cannot use the -l or --load
+      option more than once. Finally, you also cannot specify a Markov chain
       length (with -m or --markov-length) when loading probability data with
       this option, because the generated probability data forces the use of
       chains of the same length as were specified with the data was initially
@@ -138,9 +139,9 @@ version. See the file LICENSE.md for a copy of this licence.
 
 import re, random, sys, pickle, getopt, pprint
 
+import text_handling as th  # https://github.com/patrick-brian-mooney/python-personal-library/blob/master/text_handling.py
 import patrick_logger       # From https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
-import text_handling as th  # https://github.com/patrick-brian-mooney/python-personal-library/blob/master/text_handling.py
 
 # Set up some constants
 patrick_logger.verbosity_level = 0  # Bump above zero to get more verbose messages about processing and to skip the
@@ -153,19 +154,21 @@ punct_with_no_space_after = r'—\-\/․'           # Note that last character i
 word_punct = r"'’❲❳%°#․"                        # Punctuation marks to be considered part of a word.
 token_punct = r".,\:\-!?;—\/"                   # These punctuation marks also count as tokens.
 
-final_substitutions = [     # list of lists: each [search_regex, replace_regex]. Substitutions occur in order specified.
+final_substitutions = [             # list of lists: each [search_regex, replace_regex]. Substitutions occur in order specified.
     ['--', '—'],
     ['...', '…'],
-    ['․', '.'],             # replace one-dot leader with period
+    ['․', '.'],                     # replace one-dot leader with period
     ['..', '.'],
     [" ' ", ''],
     ['―-', '―'],
     [':—', ': '],
-    ["\n' ", '\n'],         # newline--single quote--space
+    ["\n' ", '\n'],                 # newline--single quote--space
     ["<p>'", '<p>'],
+    ["<p> ", '<p>'],                # <p>-space to <p> (without space)
+    ["<p></p>", ''],                # <p></p> to nothing
     ['- ', '-'],
-    ['—-', '—'],            # em dash-hyphen to em dash
-    ["(\d+),\s+(\d+)", "\1,\2"],  # Remove spaces after commas when commas are between numbers.
+    ['—-', '—'],                    # em dash-hyphen to em dash
+    ["(\d+),\s+(\d+)", "\1,\2"],    # Remove spaces after commas when commas are between numbers.
 ]
 
 # Schwartz's version stored mappings globally to save copying time, but this
@@ -188,7 +191,6 @@ final_substitutions = [     # list of lists: each [search_regex, replace_regex].
 # Contains the set of words that can start sentences
 
 
-# print(process_acronyms(text))
 def process_acronyms(text):
     """Takes TEXT and looks through it for acronyms. If it finds any, it takes each
     and converts their periods to one-dot leaders to make the Markov parser treat
@@ -262,11 +264,16 @@ def to_hash_key(lst):
     affect processing time too negatively."""
     return tuple(lst)
 
+def word_list_from_string(the_string):
+    """Converts a string into a set of tokens."""
+    return [fix_caps(w) for w in re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_string)]
+
 def word_list(filename):
-    """Returns the contents of the file, split into a list of words and
-    (some) punctuation."""
+    """Reads  the contents of the file FILENAME and splits it into into a list of
+    tokens -- words and (some) punctuation.
+    """
     with open(filename, 'r') as the_file:
-        return [fix_caps(w) for w in re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_file.read())]
+        return word_list_from_string(the_file.read())
 
 def addItemToTempMapping(history, word, the_temp_mapping):
     '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
@@ -332,12 +339,32 @@ def next(prevList, the_mapping):
                 retval = k
     return retval
 
-def genSentence(markov_length, the_mapping, starts):
-    '''Start with a random "starting word"'''
+def genSentence(markov_length, the_mapping, starts, allow_single_character_sentences=False):
+    """Build a sentence, starting with a random 'starting word.'
+    
+    MARKOV_LENGTH is the length of the chains used to generate the sentence, from
+    1 to whatever the maximum sentence length is. Practically speaking, there's
+    no point in setting it above the maximum length of sentences in the source
+    text, and the USEFUL range of this parameter is probably noticeably below
+    that level.
+    
+    THE_MAPPING is the chains dictionary compiled by buildMapping().
+    
+    STARTS is the list of possible sentence-beginning words compiled by
+    buildMapping().
+    
+    ALLOW_SINGLE_CHARACTER_SENTENCES indicates whether sentences that consist
+    entirely of a single character followed by sentence-ending punctuation
+    should be rejected (if the parameter is False) or allowed (if the parameter
+    is True).
+    
+    Returns a string, the generated sentence.
+    """
     log_it("      genSentence() called.", 4)
     log_it("        markov_length = %d." % markov_length, 5)
     log_it("        the_mapping = %s." % the_mapping, 5)
     log_it("        starts = %s." % starts, 5)
+    log_it("        allow_single_character_sentences = %s." % allow_single_character_sentences, 5)
     curr = random.choice(starts)
     sent = th.capitalize(curr)
     prevList = [curr]
@@ -346,16 +373,21 @@ def genSentence(markov_length, the_mapping, starts):
         curr = next(prevList, the_mapping)
         prevList.append(curr)
         # if the prevList has gotten too long, trim it
-        if len(prevList) > markov_length:
+        while len(prevList) > markov_length:
             prevList.pop(0)
         if curr not in punct_with_no_space_before and (len(prevList) < 2 or prevList[-2] not in punct_with_no_space_after):     # reminder: Python short-circuits
             sent += " " # Add spaces between words (but not punctuation)
         sent += curr
+    if not allow_single_character_sentences:
+        if len(sent.strip().strip(sentence_ending_punct).strip()) == 1:                             # If we got a one-character sentence ...
+            if sent.strip().strip(sentence_ending_punct).strip().upper() != "I":                    # And that one character isn't "I" ...
+                sent = genSentence(markov_length=markov_length, the_mapping=the_mapping, starts=starts) # Retry, recursively.
     return sent
 
 def store_chains(markov_length, the_starts, the_mapping, filename):
-    """Shove the relevant chain-based data into a dictionary, then pickle it and store
-    it in the designated file."""
+    """Shove the relevant chain-based data into a dictionary, then pickle it and
+    store it in the designated file.
+    """
     chains_dictionary = { 'markov_length': markov_length, 'the_starts': the_starts, 'the_mapping': the_mapping }
     try:
         the_chains_file = open(filename, 'wb')
@@ -489,7 +521,7 @@ def main():
             if chains_file:
                 store_chains(markov_length, starts, the_mapping, chains_file)
     if starts == None or the_mapping == None:     # Ridiculous! We must have SOMETHING to work with.
-        log_it("ERROR: You must specify a chains file with -l, or else at least one text file with -i.")
+        log_it("ERROR: You must either specify a chains file with -l, or else at least one text file with -i.")
         sys.exit(2)
     print(gen_text(the_mapping, starts, markov_length, sentences_desired, is_html))
 
