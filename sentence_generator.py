@@ -376,7 +376,7 @@ def genSentence(markov_length, the_mapping, starts, allow_single_character_sente
         # if the prevList has gotten too long, trim it
         while len(prevList) > markov_length:
             prevList.pop(0)
-        if curr not in punct_with_no_space_before and (len(prevList) < 2 or prevList[-2] not in punct_with_no_space_after):     # reminder: Python short-circuits
+        if curr not in punct_with_no_space_before and (len(prevList) < 2 or prevList[-2] not in punct_with_no_space_after):
             sent += " " # Add spaces between words (but not punctuation)
         sent += curr
     if not allow_single_character_sentences:
@@ -392,7 +392,7 @@ def store_chains(markov_length, the_starts, the_mapping, filename):
     chains_dictionary = { 'markov_length': markov_length, 'the_starts': the_starts, 'the_mapping': the_mapping }
     try:
         the_chains_file = open(filename, 'wb')
-        the_pickler = pickle.Pickler(the_chains_file, protocol=-1)    # Use the most efficient protocol possible, even if not readable by earlier Pythons
+        the_pickler = pickle.Pickler(the_chains_file, protocol=-1)    # Use the most efficient protocol possible
         the_pickler.dump(chains_dictionary)
         the_chains_file.close()
     except IOError as e:
@@ -455,7 +455,7 @@ def main():
     inputs = [].copy()
     is_html = False
     # Next, parse command-line options, if there are any
-    if len(sys.argv) > 1: # The first option in argv, of course, is the name of the program itself.
+    if len(sys.argv) > 1: # The first item in argv, of course, is the name of the program itself.
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'vhqo:l:c:w:p:i:m:',
                     ['verbose', 'help', 'quiet', 'output=', 'load=', 'count=',
