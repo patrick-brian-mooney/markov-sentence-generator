@@ -1,7 +1,7 @@
 Markov Sentence Generator
 =========================
 
-v1.1, 29 November 2015
+v1.2, 24 January 2017
 ----------------------
 
 This program generates (one or more sentences of) "natural-sounding" text using a Markov model and sample textual training input.  Given some sample text from which to build a model, the program generates new text by randomly traversing a Markov chain that models the sources on which it was trained.  Use it from the terminal by doing something like:
@@ -10,7 +10,9 @@ This program generates (one or more sentences of) "natural-sounding" text using 
 
 Non-Linux users may need to drop the `./` at the beginning of that command line. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters.
 
-sentence_generator.py needs existing text to use as the basis for the text that it generates. You must either use -l to specify a file containing compiled probability data, saved with -o on a previous run, or else must specify at least one plain-text file (with -i or --input) for this purpose. If you're looking for something to play with, try passing in a book from Project Gutenberg with -i or --input. A quick reference list of options you can pass in:
+sentence_generator.py needs existing text to use as the basis for the text that it generates. You must either specify at least one plain-text file (with `-i` or `--input`) for this purpose, or else must use `-l` to specify a file containing compiled probability data, saved with `-o` on a previous run. If you're looking for something to play with, try passing in a book from Project Gutenberg with `-i` or `--input` and trying passing different (fairly small) integers to the `-m` parameter, e.g. `-m 2` or `-m 5`.
+
+A quick reference list of options you can pass in:
 
 <table>
 <tr><th scope="column">short form</th><th scope="column">long form</th><th scope="column">effect</th></tr>
@@ -34,3 +36,4 @@ Chain length defaults to 1 (which is fastest), but increasing this may generate 
 This script is Patrick Mooney's fork of [Harry R. Schwartz's Markov Sentence Generator](https://github.com/hrs/markov-sentence-generator), modified for my (forthcoming) automated text blog *Ulysses Redux*.  HRS did the hard work here; my changes reflect adaptations to the needs of that particular project (and an opportunity to learn a bit about Python and Markov chain-based text processing). It also seeks to be more generally useful as a command-line program, though how well I have succeeded at that goal is (of course) a matter of opinion. The command-line interface options are intended to be a superset of those used in Jamie Zawinski's [DadaDodo](https://www.jwz.org/dadadodo/), which is also a Markov-based text generator (though this program is not explicitly intended to be a drop-in replacement for DadaDodo and—notably—it cannot read compiled DadaDodo chains, nor produce chains DadaDodo can read). 
 
 If you want to develop this script, you are welcome to do so: it, like Schwartz's implementation, is licensed under the GPL, either version 3 or (at your option) any later option. A copy of [version 3 of the GPL](http://www.gnu.org/licenses/gpl-3.0.en.html) is included as the file LICENSE.md; a listing of changes is included as the file HISTORY.md.
+

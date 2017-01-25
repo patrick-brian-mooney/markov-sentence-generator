@@ -32,6 +32,16 @@ v1.1, 2 February 2016
 ---------------------
 Still tweaking punctuation settings.
 
-v1.1, 3 February 2016.
+v1.1, 3 February 2016
 ----------------------
 Pulled regex patterns to the front of the file, as constants. (Well, Python doesn't really have constants. Still.) Still tweaking the "what counts as a word?" question.
+
+
+(missing notes, partially told in commit history)
+
+v1.2, 24 January 2017
+---------------------
+Coming back to quick documentation of changes here.
+
+`gen_text()` now uses text_handling.multi_replace() to do its substitutions
+  * this means that they're now regex-based and that they keep getting applied until nothing produces a change.

@@ -342,23 +342,23 @@ def next(prevList, the_mapping):
 
 def genSentence(markov_length, the_mapping, starts, allow_single_character_sentences=False):
     """Build a sentence, starting with a random 'starting word.'
-    
+
     MARKOV_LENGTH is the length of the chains used to generate the sentence, from
     1 to whatever the maximum sentence length is. Practically speaking, there's
     no point in setting it above the maximum length of sentences in the source
     text, and the USEFUL range of this parameter is probably noticeably below
     that level.
-    
+
     THE_MAPPING is the chains dictionary compiled by buildMapping().
-    
+
     STARTS is the list of possible sentence-beginning words compiled by
     buildMapping().
-    
+
     ALLOW_SINGLE_CHARACTER_SENTENCES indicates whether sentences that consist
     entirely of a single character followed by sentence-ending punctuation
     should be rejected (if the parameter is False) or allowed (if the parameter
     is True).
-    
+
     Returns a string, the generated sentence.
     """
     log_it("      genSentence() called.", 4)
@@ -438,8 +438,7 @@ def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=
                     the_text = the_text.strip() + "\n\n"
     if is_html:
         the_text = the_text + "</p>"
-    for which_replacement in final_substitutions:
-        the_text = the_text.replace(which_replacement[0], which_replacement[1])
+    the_text = th.multi_replace(the_text, final_substitutions)
     return the_text
 
 def main():
