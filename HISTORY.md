@@ -45,3 +45,8 @@ Coming back to quick documentation of changes here.
 
 `gen_text()` now uses text_handling.multi_replace() to do its substitutions
   * this means that they're now regex-based and that they keep getting applied until nothing produces a change.
+
+25 March 2017
+-------------
+* Added the single-char ellipsis to the list of punctuations that count as tokens. Should have done that a while ago.
+* Added several dash-related replacements to the final substitution list. 

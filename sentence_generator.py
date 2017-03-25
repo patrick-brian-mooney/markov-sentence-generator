@@ -152,7 +152,7 @@ sentence_ending_punct = r'.!?'
 punct_with_no_space_before = r'.,!?;—․-:/'
 punct_with_no_space_after = r'—-/․'             # Note: that last character is U+2024, "one-dot leader".
 word_punct = r"'’❲❳%°#․$"                       # Punctuation marks to be considered part of a word.
-token_punct = r".,\:\-!?;—\/&"                  # These punctuation marks also count as tokens.
+token_punct = r".,\:\-!?;—\/&…"                 # These punctuation marks also count as tokens.
 
 final_substitutions = [                 # list of lists: each [search_regex, replace_regex]. Substitutions occur in order specified.
     ['--', '—'],
@@ -160,14 +160,16 @@ final_substitutions = [                 # list of lists: each [search_regex, rep
     ['․', '.'],                         # replace one-dot leader with period
     ['\.\.', '.'],
     [" ' ", ''],
-    ['―-', '―'],
+    ['――', '―'],                        # Two horizontal bars to one horizontal bar
+    ['―-', '―'],                        # Horizontal bar-hyphen to single horizontal bar
     [':—', ': '],
     ["\n' ", '\n'],                     # newline--single quote--space
     ["<p>'", '<p>'],
     ["<p> ", '<p>'],                    # <p>-space to <p> (without space)
     ["<p></p>", ''],                    # <p></p> to nothing
-    ['- ', '-'],
+    ['- ', '-'],                        # hyphen-space to hyphen
     ['—-', '—'],                        # em dash-hyphen to em dash
+    ['——', '—'],                        # two em dashes to one em dash
     ['([0-9]),\s([0-9])', r'\1,\2'],    # Remove spaces after commas when commas are between numbers.
     ['([0-9]):\s([0-9])', r'\1:\2'],    # Remove spaces after colons when colons are between numbers.
 ]
