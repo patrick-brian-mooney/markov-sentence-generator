@@ -201,7 +201,6 @@ def process_acronyms(text):
 
     This function is NEVER called directly by any other routine in this file;
     it's a convenience function for code that calls this code.
-
     """
     remaining_to_process = text[:]
     ret = ""
@@ -236,7 +235,7 @@ def process_acronyms(text):
     return ret
 
 def print_usage():
-    """Print a usage message to the terminal"""
+    """Print a usage message to the terminal."""
     patrick_logger.log_it("INFO: print_usage() was called", 2)
     print('\n\n')
     print(__doc__)
@@ -314,7 +313,7 @@ def buildMapping(word_list, markov_length):
         if history[-1] in sentence_ending_punct and follow not in punct_with_space_after:
             starts.append(follow)
         addItemToTempMapping(history, follow, the_temp_mapping)
-    # Normalize the values in the_temp_mapping, put them into mapping
+    # Normalize the values in the_temp_mapping, put them into the_mapping
     for first, followset in the_temp_mapping.items():
         total = sum(followset.values())
         # Normalizing here:
@@ -323,7 +322,8 @@ def buildMapping(word_list, markov_length):
 
 def next(prevList, the_mapping):
     """Returns the next word in the sentence (chosen randomly),
-    given the previous ones."""
+    given the previous ones.
+    """
     sum = 0.0
     retval = ""
     index = random.random()
@@ -431,7 +431,7 @@ def gen_text(the_mapping, starts, markov_length=1, sentences_desired=1, is_html=
                 if the_text[-1] != "\n" and the_text[-3:] != "<p>":
                     the_text = the_text + " "   # Add a space to the end if we're not starting a new paragraph.
             except IndexError:
-                pass        # If the string is so far empty, well, just move forward. We don't need to add a space to the beginning of the text, anyway.
+                pass        # If the string is so far empty, well, we don't need to add a space to the beginning of the text, anyway.
             the_text = the_text + genSentence(markov_length, the_mapping, starts)
             if random.random() <= paragraph_break_probability:
                 if is_html:
