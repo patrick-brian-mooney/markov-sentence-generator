@@ -26,7 +26,7 @@ v1.1, 27 January 2016
 
 v1.1, 29 January 2016
 ----------------------
-* Expanding what counds as punctuation tokens.
+* Expanding what counts as punctuation tokens.
 
 v1.1, 2 February 2016
 ---------------------
@@ -50,3 +50,8 @@ Coming back to quick documentation of changes here.
 -------------
 * Added the single-char ellipsis to the list of punctuations that count as tokens. Should have done that a while ago.
 * Added several dash-related replacements to the final substitution list. 
+
+v1.3, 18 April 2017
+-------------------
+* Added the `-r` / `--chars` option, which causes the tokens used to be characters, rather than words.
+  * Still playing around with making this work, but it's basically solid.

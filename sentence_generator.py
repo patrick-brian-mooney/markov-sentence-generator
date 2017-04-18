@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Patrick Mooney's Markov sentence generator: generates random (but often
-intelligible) text based on a frequency analysis of one or more existing texts.
-It is based on Harry R. Schwartz's Markov sentence generator, but is intended
-to be more flexible for use in other projects (primarily my automated text blog,
-UlyssesRedux). Licensed under the GPL v3+. Available at
-https://github.com/patrick-brian-mooney/markov-sentence-generator. See README.md
-for more details.
+"""Patrick Mooney's Markov sentence generator, %s.
+
+This program generates random (but often intelligible) text based on a
+frequency analysis of one or more existing texts. It is based on Harry R.
+Schwartz's Markov sentence generator, but is intended to be more flexible for
+use in my various text-generation projects. Licensed under the GPL v3+.
+
+This script is available at
+https://github.com/patrick-brian-mooney/markov-sentence-generator. See the
+files README.md and LICENSE.md for more details.
 
 USAGE:
 
@@ -151,10 +154,16 @@ This program is licensed under the GPL v3 or, at your option, any later
 version. See the file LICENSE.md for a copy of this licence.
 """
 
+__author__ = "Patrick Mooney, http://patrickbrianmooney.nfshost.com/~patrick/"
+__version__ = "$v1.3 $"
+__date__ = "$Date: 2017/04/18 16:16:00 $"
+__copyright__ = "Copyright (c) 2015-17 Patrick Mooney"
+__license__ = "GPL v3, or, at your option, any later version"
+
 import re, random, sys, pickle, getopt, pprint
 
-import text_handling as th  # https://github.com/patrick-brian-mooney/python-personal-library/blob/master/text_handling.py
-import patrick_logger       # From https://github.com/patrick-brian-mooney/personal-library
+import text_handling as th  # From  https://github.com/patrick-brian-mooney/personal-library
+import patrick_logger       # From  https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
 # Set up some constants
@@ -252,7 +261,7 @@ def print_usage():
     """Print a usage message to the terminal."""
     patrick_logger.log_it("INFO: print_usage() was called", 2)
     print('\n\n')
-    print(__doc__)
+    print(__doc__ % __version__.strip('$').strip())
 
 def fix_caps(word):
     """HRS initially said:
