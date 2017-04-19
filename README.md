@@ -1,14 +1,18 @@
-Markov Sentence Generator
-=========================
+Patrick Mooney's Markov Sentence Generator
+==========================================
 
 v1.3, 18 April 2017
 ----------------------
 
 This program generates (one or more sentences of) "natural-sounding" random text based on an existing text that it analyzes and models.  Given some sample text, the program creates a set of Markov chains that models that sample text and then generates new text by randomly traversing that set of chains.  Use it from the terminal by doing something like:
 
-`$ ./sentence_generator.py [options] -i FILENAME [-i FILENAME ] | -l FILENAME`
+`$ ./sentence_generator.py [options] -i FILENAME [-i FILENAME ] [-i filename ...]`
 
-Non-Linux users may need to drop the `./` at the beginning of that command line. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome.
+Alternately, if you've gone through the trouble of doing the above already with the text you want to work with, and have saved the compiled probability data (the "chains") with the `-o` option, you can instead do this:
+
+`$ ./sentence_generator.py [options] -l FILENAME`
+
+Non-Linux users may need to drop the `./` at the beginning of those commands. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome.
 
 `sentence_generator.py` needs existing text to use as the basis for the text that it generates. You must either specify at least one plain-text file (with `-i` or `--input`) for this purpose, or else must use `-l` or `--load` to specify a file containing compiled probability data ("saved chains"), created with `-o` on a previous run. If you're looking for something to play with, try passing in a book from Project Gutenberg with `-i` or `--input` and trying passing different (fairly small) integers to the `-m` parameter, e.g. `-m 2` or `-m 5`.
 
