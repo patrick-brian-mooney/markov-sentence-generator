@@ -12,7 +12,9 @@ Alternately, if you've gone through the trouble of doing the above already with 
 
 `$ ./sentence_generator.py [options] -l FILENAME`
 
-Non-Linux users may need to drop the `./` at the beginning of those commands. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome.
+The `-l` (or `--load`) option is a convenience to save processing time: the program will run more quickly, but you can't combine `-l`/`--load` with `-i`/`--input`, nor can you use more than one `-l`/`--load` in a single program run. 
+
+Note that non-Linux users may need to drop the `./` at the beginning of those commands. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome.
 
 `sentence_generator.py` needs existing text to use as the basis for the text that it generates. You must either specify at least one plain-text file (with `-i` or `--input`) for this purpose, or else must use `-l` or `--load` to specify a file containing compiled probability data ("saved chains"), created with `-o` on a previous run. If you're looking for something to play with, try passing in a book from Project Gutenberg with `-i` or `--input` and trying passing different (fairly small) integers to the `-m` parameter, e.g. `-m 2` or `-m 5`.
 
