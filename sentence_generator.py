@@ -138,10 +138,20 @@ COMMAND-LINE OPTIONS
       or --markov-length.
 
   -w NUM, --columns=NUM
-      Currently unimplemented.
+      Wrap the output to NUM columns.
+
+      If NUM is -1 (or not specified), the sentence generator does its best to
+      wrap to the width of the current terminal. If NUM is 0, no wrapping at
+      all is performed, and words may be split between lines.
+
+      This option cannot be used with --html.
 
   -p NUM, --pause=NUM
-      Currently unimplemented.
+      Pause NUM seconds after every paragraph is printed.
+
+      This option cannot be used with --html.
+
+      Not yet working, but will work in v2.0.
 
   --html
       Wrap paragraphs of text output by the program with HTML paragraph tags.
@@ -160,15 +170,18 @@ __date__ = "$Date: 2017/04/18 16:16:00 $"
 __copyright__ = "Copyright (c) 2015-17 Patrick Mooney"
 __license__ = "GPL v3, or, at your option, any later version"
 
-import re, random, sys, pickle, getopt, pprint
+import re, random, sys, pickle, getopt, pprint, time
 
 import text_handling as th  # From  https://github.com/patrick-brian-mooney/personal-library
 import patrick_logger       # From  https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
 # Set up some constants
-patrick_logger.verbosity_level = 3  # Bump above zero to get more verbose messages about processing and to skip the
+patrick_logger.verbosity_level = 2  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
+
+force_test = False
+paragraph_pause = 0
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
@@ -461,10 +474,10 @@ def gen_text(the_mapping,
     if sentences_desired > 0:
         for which_sentence in range(0, sentences_desired):
             try:
-                if the_text[-1] != "\n" and the_text[-3:] != "<p>":
-                    the_text = the_text + " "   # Add a space to the end if we're not starting a new paragraph.
+                if the_text[-1] != "\n" and the_text[-3:] != "<p>":     # If we're not starting a new paragraph ...
+                    the_text = the_text + " "                           #   add a space after the sentence-ending punctuation.
             except IndexError:
-                pass        # If the string is so far empty, well, we don't need to add a space to the beginning of the text, anyway.
+                pass        # If the string is empty so far, well, we don't need to add a space to the beginning of the text, then.
             the_text = the_text + genSentence(markov_length=markov_length, the_mapping=the_mapping, starts=starts,
                                               character_tokens=character_tokens)
             if random.random() <= paragraph_break_probability:
@@ -484,7 +497,11 @@ def main(markov_length=1,
          sentences_desired=1,
          inputs=[][:],
          character_tokens=False,
-         is_html=False):
+         is_html=False,
+         columns=-1):
+    """Parse command-line options and generate some text.
+    """
+    global paragraph_pause
     # Set up variables for this run
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         print('Content-type: text/html\n\n')                                # ... print HTTP headers, then documentation.
@@ -549,14 +566,19 @@ def main(markov_length=1,
                 log_it("  -i specified with argument %s." % args)
                 inputs.append(args)
             elif opt in ('-w', '--columns'):
-                pass    # How many columns wide the output should be. Currently unimplemented.
+                columns = int(args)    # How many columns wide the output should be.
+                is_html = False
             elif opt in ('-p', '--pause'):
-                pass    # How many seconds to pause between paragraphs. Currently unimplemented.
+                paragraph_pause = int(args)    # How many seconds to pause between paragraphs. Currently unimplemented.
+                is_html = False
             elif opt == '--html':
-                is_html = True    # Wrap paragraphs of text that are output in <p> ... </p>.
+                is_html = True    # Wrap paragraphs output text in <p> ... </p>.
+                paragraph_pause = 0
+                columns = 0
     else:
-        log_it('DEBUGGING: No command-line parameters', 2)
-        print_usage()
+        if not force_test:
+            log_it('DEBUGGING: No command-line parameters', 2)
+            print_usage()
     log_it('DEBUGGING: verbosity_level after parsing command line is %d.' % patrick_logger.verbosity_level, 2)
     if starts == None or the_mapping == None:     # then no chains file was loaded.
         log_it("INFO: No chains file specified; parsing text files specified.", 1)
@@ -573,13 +595,28 @@ def main(markov_length=1,
     if starts == None or the_mapping == None:     # Ridiculous! We must have SOMETHING to work with.
         log_it("ERROR: You must either specify a chains file with -l, or else at least one text file with -i.")
         sys.exit(2)
-    print(gen_text(the_mapping=the_mapping, starts=starts, markov_length=markov_length,
-                   sentences_desired=sentences_desired, is_html=is_html, character_tokens=character_tokens))
+
+    the_text = gen_text(the_mapping=the_mapping, starts=starts, markov_length=markov_length, sentences_desired=sentences_desired, is_html=is_html, character_tokens=character_tokens)
+    if columns == 0:         # Wrapping is totally disabled. Print exactly as generated.
+        log_it("INFO: COLUMNS is zero; not wrapping text at all", 2)
+        print(the_text)
+        sys.exit(0)
+    elif columns == -1:
+        log_it("INFO: COLUMNS is -1; wrapping text to best-guess column width", 2)
+        padding = 0
+    else:
+        padding = max((th.terminal_width() - columns) // 2, 0)
+        log_it("INFO: COLUMNS is %s; padding text with %s spaces on each side" % (columns, padding), 2)
+        log_it("NOTE: terminal width is %s" % th.terminal_width())
+    the_text = th.multi_replace(the_text, [['\n\n', '\n']])
+    for the_paragraph in the_text.split('\n'):
+        th.print_indented(the_paragraph, each_side=padding)
+        print()
 
 
 if __name__ == "__main__":
-    if patrick_logger.verbosity_level > 2:
+    if force_test:
         import glob
-        main(markov_length=3, sentences_desired=20, inputs=glob.glob('/lovecraft/corpora/previous/*txt')+glob.glob('/UlyssesRedux/corpora/joyce/ulysses/??.txt')+glob.glob('/lovecraft/corpora/*txt')+glob.glob('/lovecraft/corpora/not yet used/*txt'), character_tokens=True)
+        main(markov_length=4, sentences_desired=20, columns=76, inputs=glob.glob('/lovecraft/corpora/previous/*txt'), character_tokens=True)
     else:
         main()
