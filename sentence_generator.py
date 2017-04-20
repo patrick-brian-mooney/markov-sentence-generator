@@ -26,7 +26,7 @@ might be something like:
 
   #!/usr/bin/env python3
   from sentence_generator import *
-  starts, the_mapping = buildMapping(word_list('somefile.txt'), markov_length=2)
+  starts, the_mapping = _build_mapping(word_list('somefile.txt'), markov_length=2)
   print(gen_text(the_mapping, starts, markov_length=2, sentences_desired=24))
 
 
@@ -165,22 +165,22 @@ version. See the file LICENSE.md for a copy of this licence.
 """
 
 __author__ = "Patrick Mooney, http://patrickbrianmooney.nfshost.com/~patrick/"
-__version__ = "$v1.3 $"
-__date__ = "$Date: 2017/04/18 16:16:00 $"
+__version__ = "$v2.0 $"
+__date__ = "$Date: 2017/04/19 16:16:00 $"
 __copyright__ = "Copyright (c) 2015-17 Patrick Mooney"
 __license__ = "GPL v3, or, at your option, any later version"
 
 import re, random, sys, pickle, getopt, pprint, time
 
-import text_handling as th  # From  https://github.com/patrick-brian-mooney/personal-library
-import patrick_logger       # From  https://github.com/patrick-brian-mooney/personal-library
+import text_handling as th          # From  https://github.com/patrick-brian-mooney/personal-library
+import patrick_logger               # From  https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
 # Set up some constants
 patrick_logger.verbosity_level = 2  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
 
-force_test = False
+force_test = True
 paragraph_pause = 0
 
 punct_with_space_after = r'.,\:!?;'
@@ -236,7 +236,7 @@ def process_acronyms(text):
     the acronym as a single word.
 
     This function is NEVER called directly by any other routine in this file;
-    it's a convenience function for code that calls this code.
+    it's a convenience function for code that uses this module.
     """
     remaining_to_process = text[:]
     ret = ""
@@ -302,19 +302,6 @@ def to_hash_key(lst):
     affect processing time too negatively."""
     return tuple(lst)
 
-def word_list_from_string(the_string, character_tokens=False):
-    """Converts a string into a set of tokens."""
-    tokens = list(the_string) if character_tokens else re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct),
-                                                                  the_string)
-    return [fix_caps(w) for w in tokens]
-
-def word_list(filename, character_tokens=False):
-    """Reads the contents of the file FILENAME and splits it into into a list of
-    tokens -- words and (some) punctuation.
-    """
-    with open(filename, 'r') as the_file:
-        return word_list_from_string(the_file.read(), character_tokens=character_tokens)
-
 def addItemToTempMapping(history, word, the_temp_mapping):
     '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
     the_temp_mapping (and the_mapping) both match each word to a list of possible next
@@ -334,29 +321,6 @@ def addItemToTempMapping(history, word, the_temp_mapping):
             the_temp_mapping[first] = {}
             the_temp_mapping[first][word] = 1.0
         history = history[1:]
-
-def buildMapping(word_list, markov_length):
-    """Build and normalize the_mapping."""
-    the_temp_mapping = {}.copy()
-    the_mapping = {}.copy()
-    starts = [][:]
-    starts.append(word_list[0])
-    for i in range(1, len(word_list) - 1):
-        if i <= markov_length:
-            history = word_list[: i + 1]
-        else:
-            history = word_list[i - markov_length + 1 : i + 1]
-        follow = word_list[i + 1]
-        # if the last elt was a sentence-ending punctuation, add the next word to the start list
-        if history[-1] in sentence_ending_punct and follow not in punct_with_space_after:
-            starts.append(follow)
-        addItemToTempMapping(history, follow, the_temp_mapping)
-    # Normalize the values in the_temp_mapping, put them into the_mapping
-    for first, followset in the_temp_mapping.items():
-        total = sum(followset.values())
-        # Normalizing here:
-        the_mapping[first] = dict([(k, v / total) for k, v in followset.items()])
-    return starts, the_mapping
 
 def next(prevList, the_mapping):
     """Returns the next word in the sentence (chosen randomly),
@@ -380,52 +344,6 @@ def next(prevList, the_mapping):
                 retval = k
                 break
     return retval
-
-def genSentence(markov_length, the_mapping, starts, allow_single_character_sentences=False, character_tokens=False):
-    """Build a sentence, starting with a random 'starting word.'
-
-    MARKOV_LENGTH is the length of the chains used to generate the sentence, from
-    1 to whatever the maximum sentence length is. Practically speaking, there's
-    no point in setting it above the maximum length of sentences in the source
-    text, and the USEFUL range of this parameter is probably noticeably below
-    that level.
-
-    THE_MAPPING is the chains dictionary compiled by buildMapping().
-
-    STARTS is the list of possible sentence-beginning words compiled by
-    buildMapping().
-
-    ALLOW_SINGLE_CHARACTER_SENTENCES indicates whether sentences that consist
-    entirely of a single character followed by sentence-ending punctuation
-    should be rejected (if the parameter is False) or allowed (if the parameter
-    is True).
-
-    Returns a string, the generated sentence.
-    """
-    log_it("      genSentence() called.", 4)
-    log_it("        markov_length = %d." % markov_length, 5)
-    log_it("        the_mapping = %s." % the_mapping, 5)
-    log_it("        starts = %s." % starts, 5)
-    log_it("        allow_single_character_sentences = %s." % allow_single_character_sentences, 5)
-    curr = random.choice(starts)
-    sent = curr
-    prevList = [curr]
-    # Keep adding words until we hit a period, exclamation point, or question mark
-    while curr not in sentence_ending_punct:
-        curr = next(prevList, the_mapping)
-        prevList.append(curr)
-        # if the prevList has gotten too long, trim it
-        while len(prevList) > markov_length:
-            prevList.pop(0)
-        if not character_tokens:     # Don't add spaces between randomly selected tokens if those tokens are just single characters.
-            if curr not in punct_with_no_space_before and (len(prevList) < 2 or prevList[-2] not in punct_with_no_space_after):
-                sent += " " # Add spaces between words (but not punctuation)
-        sent += curr
-    if not allow_single_character_sentences:
-        if len(sent.strip().strip(sentence_ending_punct).strip()) == 1:                             # If we got a one-character sentence ...
-            if sent.strip().strip(sentence_ending_punct).strip().upper() != "I":                    # And that one character isn't "I" ...
-                sent = genSentence(markov_length=markov_length, the_mapping=the_mapping, starts=starts) # Retry, recursively.
-    return th.capitalize(sent)
 
 def store_chains(markov_length, the_starts, the_mapping, filename):
     """Shove the relevant chain-based data into a dictionary, then pickle it and
@@ -454,41 +372,135 @@ def read_chains(filename):
         log_it("ERROR: Can't read chains from %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0)
     return chains_dictionary['markov_length'], chains_dictionary['the_starts'], chains_dictionary['the_mapping']
 
-def gen_text(the_mapping,
-             starts,
-             markov_length=1,
-             sentences_desired=1,
-             is_html=False,
-             paragraph_break_probability=0.25,
-             character_tokens=False):
-    """Actually generate the text."""
-    log_it("gen_text() called.", 4)
-    log_it("  Markov length is %d; requesting %d sentences." % (markov_length, sentences_desired), 4)
-    log_it("  Legitimate starts: %s" % starts, 5)
-    log_it("  Probability data: %s" % the_mapping, 5)
-    if is_html:
-        log_it("  -- and we're generating an HTML fragment.", 3)
-        the_text = "<p>"
-    else:
+
+class MarkovChainTextModel(object):
+    """Chains representing a model of a text."""
+    def __init__(self):
+        """Instantiate a new, empty set of chains."""
+        self.starts = None              # List of tokens allowed at the beginning of a sentence.
+        self.markov_length = 0          # Length of the chains.
+        self.the_mapping = None         # Dictionary representing the Markov chains.
+        self.character_tokens = False   # True if the chains are characters, False if they are words. 
+
+
+class TextGenerator(object):
+    """A general-purpose text generator. To use it, instantiate it, train it, and
+    then have it generate text.
+    """
+    def __init__(self, name=None):
+        """Create a new instance."""
+        self.name = name                                # NAME is totally optional and entirely for your benefit.
+        self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
+        self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences? 
+
+    def __repr__(self):
+        if self.is_trained():
+            return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
+        else:
+            return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
+
+    def _build_mapping(self, token_list, markov_length, character_tokens=False):
+        """Create the actual Markov chain-based training data for the model, based on an
+        ordered list of tokens passed in.
+        """
+        the_temp_mapping = {}.copy()
+        the_mapping = {}.copy()
+        starts = [][:]
+        starts.append(token_list[0])
+        for i in range(1, len(token_list) - 1):
+            if i <= markov_length:
+                history = token_list[: i + 1]
+            else:
+                history = token_list[i - markov_length + 1 : i + 1]
+            follow = token_list[i + 1]
+            # if the last elt was a sentence-ending punctuation, add the next word to the start list
+            if history[-1] in sentence_ending_punct and follow not in punct_with_space_after:
+                starts.append(follow)
+            addItemToTempMapping(history, follow, the_temp_mapping)
+        # Now, normalize the values in the_temp_mapping and put them into the_mapping
+        for first, followset in the_temp_mapping.items():
+            total = sum(followset.values())
+            the_mapping[first] = dict([(k, v / total) for k, v in followset.items()])   # Here's the normalizing step.
+        self.chains.starts = starts
+        self.chains.the_mapping = the_mapping
+        self.chains.markov_length = markov_length
+        self.chains.character_tokens = character_tokens
+        
+    @staticmethod
+    def _token_list(the_string, character_tokens=False):
+        """Converts a string into a set of tokens so that the text generator can 
+        process, and therefore be trained by, it.
+        ."""
+        if character_tokens:
+            tokens = list(the_string)
+        else:
+            tokens = re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_string)
+        return [fix_caps(w) for w in tokens]
+
+    def is_trained(self):
+        """Detect whether this model is trained or not."""
+        return (self.chains.starts and self.chains.the_mapping and self.chains.markov_length)
+
+    def train(self, the_text, markov_length=1, character_tokens=False):
+        """Train the model by getting it to analyze a text passed in."""
+        self._build_mapping(self._token_list(the_text, character_tokens=character_tokens),
+                            markov_length=markov_length, character_tokens=character_tokens)
+
+    def _gen_sentence(self):
+        """Build a sentence, starting with a random 'starting word.' Returns a string,
+        which is the generated sentence.
+        """
+        log_it("      _gen_sentence() called.", 4)
+        log_it("        markov_length = %d." % self.chains.markov_length, 5)
+        log_it("        the_mapping = %s." % self.chains.the_mapping, 5)
+        log_it("        starts = %s." % self.chains.starts, 5)
+        log_it("        allow_single_character_sentences = %s." % self.allow_single_character_sentences, 5)
+        curr = random.choice(self.chains.starts)
+        sent = curr
+        prevList = [curr]
+        # Keep adding words until we hit a period, exclamation point, or question mark
+        while curr not in sentence_ending_punct:
+            curr = next(prevList, self.chains.the_mapping)
+            prevList.append(curr)
+            # if the prevList has gotten too long, trim it
+            while len(prevList) > self.chains.markov_length:
+                prevList.pop(0)
+            if not self.chains.character_tokens:            # Don't add spaces between tokens that are just single characters.
+                if curr not in punct_with_no_space_before:  
+                    if (len(prevList) < 2 or prevList[-2] not in punct_with_no_space_after):
+                        sent += " "                         # Add spaces between words (but not punctuation)
+            sent += curr
+        if not self.allow_single_character_sentences:
+            if len(sent.strip().strip(sentence_ending_punct).strip()) == 1:
+                if sent.strip().strip(sentence_ending_punct).strip().upper() != "I":
+                    sent = _gen_sentence(markov_length=markov_length, the_mapping=the_mapping, starts=starts)    # Retry, recursively.
+        return th.capitalize(sent)
+
+    def gen_text(self, sentences_desired=1, paragraph_break_probability=0.25):
+        """Actually generate some text."""
+        log_it("gen_text() called.", 4)
+        log_it("  Markov length is %d; requesting %d sentences." % (self.chains.markov_length, sentences_desired), 4)
+        log_it("  Legitimate starts: %s" % self.chains.starts, 5)
+        log_it("  Probability data: %s" % self.chains.the_mapping, 5)
         the_text = ""
-    if sentences_desired > 0:
         for which_sentence in range(0, sentences_desired):
             try:
-                if the_text[-1] != "\n" and the_text[-3:] != "<p>":     # If we're not starting a new paragraph ...
-                    the_text = the_text + " "                           #   add a space after the sentence-ending punctuation.
-            except IndexError:
-                pass        # If the string is empty so far, well, we don't need to add a space to the beginning of the text, then.
-            the_text = the_text + genSentence(markov_length=markov_length, the_mapping=the_mapping, starts=starts,
-                                              character_tokens=character_tokens)
+                if the_text[-1] != "\n":        # If we're not starting a new paragraph ...
+                    the_text = the_text + " "   #   ... add a space after the sentence-ending punctuation.
+            except IndexError:                  # If this is the very beginning of our generated text ...
+                pass                            #   ... well, we don't need to add a space to the beginning of the text, then.
+            the_text = the_text + self._gen_sentence()
             if random.random() <= paragraph_break_probability:
-                if is_html:
-                    the_text = the_text.strip() + "</p>\n\n<p>"
-                else:
-                    the_text = the_text.strip() + "\n\n"
-    if is_html:
-        the_text = the_text + "</p>"
-    the_text = th.multi_replace(the_text, final_substitutions)
-    return the_text
+                the_text = the_text.strip() + "\n\n"
+        the_text = th.multi_replace(the_text, final_substitutions)
+        return the_text
+        
+    def gen_html_frag(sentences_desired=1, paragraph_break_probability=0.25):
+        """Produce the same text that gen_text would, but wrapped in HTML <p></p> tags."""
+        log_it("We're generating an HTML fragment.", 3)
+        the_text = self.gen_text(sentences_desired, paragraph_break_probability)
+        return '\n\n'.join(['<p>%s</p>' % p for p in the_text.split('\n\n')])        
+
 
 def main(markov_length=1,
          chains_file='',
@@ -499,8 +511,10 @@ def main(markov_length=1,
          character_tokens=False,
          is_html=False,
          columns=-1):
+
     """Parse command-line options and generate some text.
     """
+
     global paragraph_pause
     # Set up variables for this run
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
@@ -589,7 +603,7 @@ def main(markov_length=1,
             chain_tokens += word_list(the_file, character_tokens=character_tokens)
             log_it("       ... chain_tokens now contains %d tokens." % len(chain_tokens), 2)
         if chain_tokens:
-            starts, the_mapping = buildMapping(chain_tokens, markov_length)
+            starts, the_mapping = _build_mapping(chain_tokens, markov_length)
             if chains_file:
                 store_chains(markov_length, starts, the_mapping, chains_file)
     if starts == None or the_mapping == None:     # Ridiculous! We must have SOMETHING to work with.
