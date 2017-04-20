@@ -210,25 +210,6 @@ final_substitutions = [                 # list of lists: each [search_regex, rep
     ['([0-9]):\s([0-9])', r'\1:\2'],    # Remove spaces after colons when colons are between numbers.
 ]
 
-# Schwartz's version stored mappings globally to save copying time, but this
-# makes the code less flexible for my purposes; still, I've kept his
-# declarations for the global variables here, where the variables were
-# previously declared.
-
-# the_temp_mapping: initially an empty dictionary, {}
-# (tuple of words) -> {dict: word -> number of times the word appears following the tuple}
-# Example entry:
-#    ('eyes', 'turned') => {'to': 2.0, 'from': 1.0}
-# Used briefly while first constructing the normalized mapping
-
-# the_mapping: initially an empty dictionary, {}
-# (tuple of words) -> {dict: word -> *normalized* number of times the word appears following the tuple}
-# Example entry:
-#    ('eyes', 'turned') => {'to': 0.66666666, 'from': 0.33333333}
-
-# starts: a list of words that can begin sentences. Initially an empty list, []
-# Contains the set of words that can start sentences
-
 
 def process_acronyms(text):
     """Takes TEXT and looks through it for acronyms. If it finds any, it takes each
@@ -276,6 +257,7 @@ def print_usage():
     print('\n\n')
     print(__doc__ % __version__.strip('$').strip())
 
+
 def fix_caps(word):
     """HRS initially said:
     "We want to be able to compare words independent of their capitalization."
@@ -301,49 +283,6 @@ def to_hash_key(lst):
     This looks like a hack (and it is, a little) but in practice it doesn't
     affect processing time too negatively."""
     return tuple(lst)
-
-def addItemToTempMapping(history, word, the_temp_mapping):
-    '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
-    the_temp_mapping (and the_mapping) both match each word to a list of possible next
-    words.
-
-    Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
-    the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
-    '''
-    while len(history) > 0:
-        first = to_hash_key(history)
-        if first in the_temp_mapping:
-            if word in the_temp_mapping[first]:
-                the_temp_mapping[first][word] += 1.0
-            else:
-                the_temp_mapping[first][word] = 1.0
-        else:
-            the_temp_mapping[first] = {}
-            the_temp_mapping[first][word] = 1.0
-        history = history[1:]
-
-def next(prevList, the_mapping):
-    """Returns the next word in the sentence (chosen randomly),
-    given the previous ones.
-    """
-    sum = 0.0
-    retval = ""
-    index = random.random()
-    # Shorten prevList until it's in the_mapping
-    try:
-        while to_hash_key(prevList) not in the_mapping:
-            prevList.pop(0)
-    except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence to
-        # force us to start a new sentence.
-        retval = "."
-    # Get a random word from the_mapping, given prevList, if prevList isn't empty
-    else:
-        for k, v in the_mapping[to_hash_key(prevList)].items():
-            sum += v
-            if sum >= index and retval == "":
-                retval = k
-                break
-    return retval
 
 def store_chains(markov_length, the_starts, the_mapping, filename):
     """Shove the relevant chain-based data into a dictionary, then pickle it and
@@ -393,11 +332,56 @@ class TextGenerator(object):
         self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
         self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences? 
 
-    def __repr__(self):
+    def __str__(self):
         if self.is_trained():
             return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
         else:
             return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
+    
+    @staticmethod
+    def addItemToTempMapping(history, word, the_temp_mapping):
+        '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
+        the_temp_mapping (and the_mapping) both match each word to a list of possible next
+        words.
+    
+        Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
+        the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
+        '''
+        while len(history) > 0:
+            first = to_hash_key(history)
+            if first in the_temp_mapping:
+                if word in the_temp_mapping[first]:
+                    the_temp_mapping[first][word] += 1.0
+                else:
+                    the_temp_mapping[first][word] = 1.0
+            else:
+                the_temp_mapping[first] = {}
+                the_temp_mapping[first][word] = 1.0
+            history = history[1:]
+    
+    @staticmethod
+    def next(prevList, the_mapping):
+        """Returns the next word in the sentence (chosen randomly),
+        given the previous ones.
+        """
+        sum = 0.0
+        retval = ""
+        index = random.random()
+        # Shorten prevList until it's in the_mapping
+        try:
+            while to_hash_key(prevList) not in the_mapping:
+                prevList.pop(0)
+        except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence to
+            # force us to start a new sentence.
+            retval = "."
+        # Get a random word from the_mapping, given prevList, if prevList isn't empty
+        else:
+            for k, v in the_mapping[to_hash_key(prevList)].items():
+                sum += v
+                if sum >= index and retval == "":
+                    retval = k
+                    break
+        return retval
 
     def _build_mapping(self, token_list, markov_length, character_tokens=False):
         """Create the actual Markov chain-based training data for the model, based on an
@@ -416,7 +400,7 @@ class TextGenerator(object):
             # if the last elt was a sentence-ending punctuation, add the next word to the start list
             if history[-1] in sentence_ending_punct and follow not in punct_with_space_after:
                 starts.append(follow)
-            addItemToTempMapping(history, follow, the_temp_mapping)
+            self.addItemToTempMapping(history, follow, the_temp_mapping)
         # Now, normalize the values in the_temp_mapping and put them into the_mapping
         for first, followset in the_temp_mapping.items():
             total = sum(followset.values())
@@ -460,7 +444,7 @@ class TextGenerator(object):
         prevList = [curr]
         # Keep adding words until we hit a period, exclamation point, or question mark
         while curr not in sentence_ending_punct:
-            curr = next(prevList, self.chains.the_mapping)
+            curr = self.next(prevList, self.chains.the_mapping)
             prevList.append(curr)
             # if the prevList has gotten too long, trim it
             while len(prevList) > self.chains.markov_length:
@@ -502,6 +486,11 @@ class TextGenerator(object):
         return '\n\n'.join(['<p>%s</p>' % p for p in the_text.split('\n\n')])        
 
 
+# OK, some convenience definitions to provide a command-line interface.
+
+global_generator = TextGenerator()
+
+
 def main(markov_length=1,
          chains_file='',
          starts=None,
@@ -516,7 +505,6 @@ def main(markov_length=1,
     """
 
     global paragraph_pause
-    # Set up variables for this run
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         print('Content-type: text/html\n\n')                                # ... print HTTP headers, then documentation.
         print("""<!doctype html><html>
@@ -529,7 +517,7 @@ def main(markov_length=1,
 </body>
 </html>"""% __doc__)
         sys.exit(0)
-    # Next, parse command-line options, if there are any
+    # Parse command-line options, if there are any
     if len(sys.argv) > 1: # The first item in argv, of course, is the name of the program itself.
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'vhqro:l:c:w:p:i:m:',
