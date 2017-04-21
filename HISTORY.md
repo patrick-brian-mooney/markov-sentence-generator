@@ -55,3 +55,18 @@ v1.3, 18 April 2017
 -------------------
 * Added the `-r` / `--chars` option, which causes the tokens used to be characters, rather than words.
   * Still playing around with making this work, but it's basically solid.
+
+v2.0, 20 April 2017
+-------------------
+* The parser has been rewritten to have an object-oriented interface when it's used as a library.
+  * Passing around multiple variables for different aspects of the data was getting really unwieldy.
+  * This makes everything a lot more conceptually simple, too: some ugly code has been eliminated.
+  * This opens up more conceptually simple optoins for similar parsers with subclassing with minimal fuss.
+    * Spoiler: there's going to be a first-pass poetry generator in the not-too-distant future.
+* All command-line options are now working except for `-p`/`--pause`.
+  * When that's working, the initial v2 will be merged into the master branch.
+* This changes the interface to the unit.
+  * Everything that depends on the old API will have to be adapted to the new protocol.
+  * The amount of work required to keep the API consistent makes it not worthwhile.
+    * Especially because, to the best of my knowledge, no one other than me is using this module.
+* Still, at this point, it's mature enough to be tested with AutoLovecraft. Which I'm about to do.
