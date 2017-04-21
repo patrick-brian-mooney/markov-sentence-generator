@@ -42,7 +42,7 @@ from patrick_logger import log_it
 patrick_logger.verbosity_level = 2  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
 
-force_test = True
+force_test = False
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
@@ -150,7 +150,7 @@ def process_command_line():
     for defaults."""
     # import argparse
     # __version__ = "2"
-    
+
     help_epilogue = """NOTES AND CAVEATS
 
 Some options are incompatible with each other. Caveats for long options also
@@ -165,16 +165,16 @@ apply to the short versions of the same options.
             encoded chains don't retain all of the data that was used to create
             them. If you're re-loading compiled data with this option, you cannot
             also use any of the following options:
-            
+
             -m/--markov-length
             -i/--input
             -r/--chars (nor can you turn it off if the previously generated
                         chains were generated with it)
-        
+
   --html    cannot be used with --columns/-w. (Rendered HTML ignores newlines
             anyway, so combining these two options will rarely or never make
             sense.)
-            
+
             It also cannot be used with -p/--pause, because HTML output is not
             designed to be printed directly to the terminal, anyway.
 
@@ -183,7 +183,7 @@ apply to the short versions of the same options.
             like:
 
                 ./sentence_generator -i somefile.txt > outputfile.txt
-  
+
 This program is licensed under the GPL v3 or, at your option, any later version. See the file LICENSE.md for details.
 
 """
@@ -241,42 +241,49 @@ def fix_caps(word):
     """
     return word
 
-def store_chains(markov_length, the_starts, the_mapping, filename):
-    """Shove the relevant chain-based data into a dictionary, then pickle it and
-    store it in the designated file.
-    """
-    chains_dictionary = { 'markov_length': markov_length, 'the_starts': the_starts, 'the_mapping': the_mapping }
-    try:
-        the_chains_file = open(filename, 'wb')
-        the_pickler = pickle.Pickler(the_chains_file, protocol=-1)    # Use the most efficient protocol possible
-        the_pickler.dump(chains_dictionary)
-        the_chains_file.close()
-    except IOError as e:
-        log_it("ERROR: Can't write chains to %s; the system said '%s'." % (filename, str(e)), 0)
-    except pickle.PickleError as e:
-        log_it("ERROR: Can't write chains to %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0)
-
-def read_chains(filename):
-    """Read the pickled chain-based data from a chains file."""
-    try:
-        the_chains_file = open(filename, 'rb')
-        chains_dictionary = pickle.load(the_chains_file)
-        the_chains_file.close()
-    except IOError as e:
-        log_it("ERROR: Can't read chains from %s; the system said '%s'." % (filename, str(e)), 0)
-    except pickle.PickleError as e:
-        log_it("ERROR: Can't read chains from %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0)
-    return chains_dictionary['markov_length'], chains_dictionary['the_starts'], chains_dictionary['the_mapping']
-
 
 class MarkovChainTextModel(object):
     """Chains representing a model of a text."""
     def __init__(self):
         """Instantiate a new, empty set of chains."""
-        self.starts = None              # List of tokens allowed at the beginning of a sentence.
+        self.the_starts = None              # List of tokens allowed at the beginning of a sentence.
         self.markov_length = 0          # Length of the chains.
         self.the_mapping = None         # Dictionary representing the Markov chains.
-        self.character_tokens = False   # True if the chains are characters, False if they are words. 
+        self.character_tokens = False   # True if the chains are characters, False if they are words.
+
+    def store_chains(self, filename):
+        """Shove the relevant chain-based data into a dictionary, then pickle it and
+        store it in the designated file.
+        """
+        chains_dictionary = { 'the_starts': self.the_starts,
+                              'markov_length': self.markov_length,
+                              'the_mapping': self.the_mapping,
+                              'character_tokens': self.character_tokens }
+        try:
+            with open(filename, 'wb') as the_chains_file:
+                the_pickler = pickle.Pickler(the_chains_file, protocol=-1)    # Use the most efficient protocol possible
+                the_pickler.dump(chains_dictionary)
+        except IOError as e:
+            log_it("ERROR: Can't write chains to %s; the system said '%s'." % (filename, str(e)), 0)
+        except pickle.PickleError as e:
+            log_it("ERROR: Can't write chains to %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0)
+
+    def read_chains(self, filename):
+        """Read the pickled chain-based data from FILENAME."""
+        default_chains = { 'character_tokens': False,       # We need only assign defaults for keys added in v2.0 and later.
+                          }                                 # the_starts, the_mapping, and markov_length have been around since 1.0.
+        try:
+            with open(filename, 'rb') as the_chains_file:
+                chains_dictionary = pickle.load(the_chains_file)
+        except IOError as e:
+            log_it("ERROR: Can't read chains from %s; the system said '%s'." % (filename, str(e)), 0)
+        except pickle.PickleError as e:
+            log_it("ERROR: Can't read chains from %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0)
+        chains_dictionary = apply_defaults(defaultargs=default_chains, args=chains_dictionary)
+        self.markov_length = chains_dictionary['markov_length']
+        self.the_starts = chains_dictionary['the_starts']
+        self.the_mapping = chains_dictionary['the_mapping']
+        self.character_tokens = chains_dictionary['character_tokens']
 
 
 class TextGenerator(object):
@@ -287,20 +294,20 @@ class TextGenerator(object):
         """Create a new instance."""
         self.name = name                                # NAME is totally optional and entirely for your benefit.
         self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
-        self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences? 
+        self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences?
 
     def __str__(self):
         if self.is_trained():
             return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
         else:
             return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
-    
+
     @staticmethod
     def addItemToTempMapping(history, word, the_temp_mapping):
         '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
         the_temp_mapping (and the_mapping) both match each word to a list of possible next
         words.
-    
+
         Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
         the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
         '''
@@ -315,7 +322,7 @@ class TextGenerator(object):
                 the_temp_mapping[first] = {}
                 the_temp_mapping[first][word] = 1.0
             history = history[1:]
-    
+
     @staticmethod
     def next(prevList, the_mapping):
         """Returns the next word in the sentence (chosen randomly),
@@ -362,14 +369,14 @@ class TextGenerator(object):
         for first, followset in the_temp_mapping.items():
             total = sum(followset.values())
             the_mapping[first] = dict([(k, v / total) for k, v in followset.items()])   # Here's the normalizing step.
-        self.chains.starts = starts
+        self.chains.the_starts = starts
         self.chains.the_mapping = the_mapping
         self.chains.markov_length = markov_length
         self.chains.character_tokens = character_tokens
-        
+
     @staticmethod
     def _token_list(the_string, character_tokens=False):
-        """Converts a string into a set of tokens so that the text generator can 
+        """Converts a string into a set of tokens so that the text generator can
         process, and therefore be trained by, it.
         ."""
         if character_tokens:
@@ -380,13 +387,13 @@ class TextGenerator(object):
 
     def is_trained(self):
         """Detect whether this model is trained or not."""
-        return (self.chains.starts and self.chains.the_mapping and self.chains.markov_length)
+        return (self.chains.the_starts and self.chains.the_mapping and self.chains.markov_length)
 
     def _train_from_text(self, the_text, markov_length=1, character_tokens=False):
         """Train the model by getting it to analyze a text passed in."""
         self._build_mapping(self._token_list(the_text, character_tokens=character_tokens),
                             markov_length=markov_length, character_tokens=character_tokens)
-    
+
     def train(self, the_files, markov_length=1, character_tokens=False):
         """Train the model from a list of text files supplied as THE_FILES."""
         assert isinstance(the_files, list) or isinstance(the_files, tuple), "ERROR: you cannot pass an object of type %s to %s.train_from_files" % (type(the_files), self)
@@ -396,7 +403,6 @@ class TextGenerator(object):
             with open(which_file) as the_file:
                 the_text = the_text + '\n' + the_file.read()
         self._train_from_text(the_text=the_text, markov_length=markov_length, character_tokens=character_tokens)
-        
 
     def _gen_sentence(self):
         """Build a sentence, starting with a random 'starting word.' Returns a string,
@@ -406,9 +412,9 @@ class TextGenerator(object):
         log_it("      _gen_sentence() called.", 4)
         log_it("        markov_length = %d." % self.chains.markov_length, 5)
         log_it("        the_mapping = %s." % self.chains.the_mapping, 5)
-        log_it("        starts = %s." % self.chains.starts, 5)
+        log_it("        starts = %s." % self.chains.the_starts, 5)
         log_it("        allow_single_character_sentences = %s." % self.allow_single_character_sentences, 5)
-        curr = random.choice(self.chains.starts)
+        curr = random.choice(self.chains.the_starts)
         sent = curr
         prevList = [curr]
         # Keep adding words until we hit a period, exclamation point, or question mark
@@ -419,7 +425,7 @@ class TextGenerator(object):
             while len(prevList) > self.chains.markov_length:
                 prevList.pop(0)
             if not self.chains.character_tokens:            # Don't add spaces between tokens that are just single characters.
-                if curr not in punct_with_no_space_before:  
+                if curr not in punct_with_no_space_before:
                     if (len(prevList) < 2 or prevList[-2] not in punct_with_no_space_after):
                         sent += " "                         # Add spaces between words (but not punctuation)
             sent += curr
@@ -433,7 +439,7 @@ class TextGenerator(object):
         """Actually generate some text."""
         log_it("gen_text() called.", 4)
         log_it("  Markov length is %d; requesting %d sentences." % (self.chains.markov_length, sentences_desired), 4)
-        log_it("  Legitimate starts: %s" % self.chains.starts, 5)
+        log_it("  Legitimate starts: %s" % self.chains.the_starts, 5)
         log_it("  Probability data: %s" % self.chains.the_mapping, 5)
         the_text = ""
         for which_sentence in range(0, sentences_desired):
@@ -447,24 +453,24 @@ class TextGenerator(object):
                 the_text = the_text.strip() + "\n\n"
         the_text = th.multi_replace(the_text, final_substitutions)
         return the_text
-        
-    def gen_html_frag(sentences_desired=1, paragraph_break_probability=0.25):
+
+    def gen_html_frag(self, sentences_desired=1, paragraph_break_probability=0.25):
         """Produce the same text that gen_text would, but wrapped in HTML <p></p> tags."""
         log_it("We're generating an HTML fragment.", 3)
         the_text = self.gen_text(sentences_desired, paragraph_break_probability)
-        return '\n\n'.join(['<p>%s</p>' % p for p in the_text.split('\n\n')])        
+        return '\n\n'.join(['<p>%s</p>' % p for p in the_text.split('\n\n')])
 
 
 def main(**kwargs):
     """Handle the main program loop and generate some text.
-    
+
     By default, this routine can simply be called as main(), with no arguments; this
     is what happens when the script is called from the command line. However, for
     testing purposes, it can also be called with keyword arguments in the same
     format that the command line would be parsed, i.e. with something like
-    
+
         main(markov_length=2, input=['Song of Solomon.txt'], count=20, chars=True)
-    
+
     """
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         generate_html_docs()
@@ -489,23 +495,26 @@ def main(**kwargs):
         if opts['pause'] or opts['columns'] > 0:
             log_it('ERROR: Specifying --html is not compatible with using a --pause/-p value or specifying a column width.')
             sys.exit(2)
-    
+
     # Now set up logging parameters
     log_it('INFO: Command-line options parsed; parameters are: %s' % pprint.pformat(opts))
     patrick_logger.verbosity_level = opts['verbose'] - opts['quiet']
     log_it('DEBUGGING: verbosity_level after parsing command line is %d.' % patrick_logger.verbosity_level, 2)
-    
+
     # Now instantiate and train the model, and save the compiled chains, if that's what the user wants
     genny = TextGenerator()
     if opts['load']:
-        raise NotImplementedError('loading previously compiled chains is not implemented quite yet')
+        genny.chains.read_chains(filename=opts['load'])
     else:
         genny.train(the_files=opts['input'], markov_length=opts['markov_length'], character_tokens=opts['chars'])
     if opts['output']:
-        raise NotImplementedError('saving compiled chains is not implemented quite yet')
-    
+        genny.chains.store_chains(filename=opts['output'])
+
     # And generate some text.
-    the_text = genny.gen_text(sentences_desired=opts['count'])
+    if opts['html']:
+        the_text = genny.gen_html_frag(sentences_desired=opts['count'])
+    else:
+        the_text = genny.gen_text(sentences_desired=opts['count'])
 
     if opts['columns'] == 0:        # Wrapping is totally disabled. Print exactly as generated.
         log_it("INFO: COLUMNS is zero; not wrapping text at all", 2)
@@ -527,7 +536,7 @@ def main(**kwargs):
 if __name__ == "__main__":
     if force_test:
         import glob
-        main(markov_length=12, count=20, input=glob.glob('/lovecraft/corpora/previous/*txt'), chars=True)
+        main(count=20, load='/lovecraft/corpora/previous/Beyond the Wall of Sleep.2.pkl', html=True)
         pass
     else:
         main()
