@@ -65,6 +65,7 @@ v2.0, 20 April 2017
     * Spoiler: there's going to be a first-pass poetry generator in the not-too-distant future.
 * All command-line options are now working except for `-p`/`--pause`.
   * When that's working, the initial v2 will be merged into the master branch.
+  * Well, that, and documentation has to be updated, too.
 * This changes the interface to the unit.
   * Everything that depends on the old API will have to be adapted to the new protocol.
   * The amount of work required to keep the API consistent makes it not worthwhile.
