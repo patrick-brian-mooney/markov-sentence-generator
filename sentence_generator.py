@@ -432,7 +432,7 @@ class TextGenerator(object):
         if not self.allow_single_character_sentences:
             if len(sent.strip().strip(sentence_ending_punct).strip()) == 1:
                 if sent.strip().strip(sentence_ending_punct).strip().upper() != "I":
-                    sent = _gen_sentence(markov_length=markov_length, the_mapping=the_mapping, starts=starts)    # Retry, recursively.
+                    sent = self._gen_sentence()    # Retry, recursively.
         return th.capitalize(sent)
 
     def gen_text(self, sentences_desired=1, paragraph_break_probability=0.25):
