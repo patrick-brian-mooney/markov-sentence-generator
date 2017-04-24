@@ -149,7 +149,7 @@ def process_command_line():
     """Parse the command line; return a dictionary of selected options, accounting
     for defaults.
     """
-    
+
     help_epilogue = """NOTES AND CAVEATS
 
 Some options are incompatible with each other. Caveats for long options also
@@ -448,17 +448,40 @@ class TextGenerator(object):
             except IndexError:                  # If this is the very beginning of our generated text ...
                 pass                            #   ... well, we don't need to add a space to the beginning of the text, then.
             the_text = the_text + self._gen_sentence()
-            if random.random() <= paragraph_break_probability:
-                the_text = the_text.strip() + "\n\n"
-        the_text = th.multi_replace(the_text, final_substitutions)
-        return the_text
+            if random.random() <= paragraph_break_probability or which_sentence == sentences_desired - 1:
+                the_text = th.multi_replace(the_text, final_substitutions)
+                yield the_text.strip() + "\n"
+                the_text = ""
+        raise StopIteration
 
     def gen_html_frag(self, sentences_desired=1, paragraph_break_probability=0.25):
         """Produce the same text that gen_text would, but wrapped in HTML <p></p> tags."""
         log_it("We're generating an HTML fragment.", 3)
-        the_text = self.gen_text(sentences_desired, paragraph_break_probability)
+        the_text = '\n'.join(self.gen_text(sentences_desired, paragraph_break_probability))
         return '\n\n'.join(['<p>%s</p>' % p for p in the_text.split('\n\n')])
 
+    def print_text(self, sentences_desired, paragraph_break_probability=0.25, pause=0, columns=-1):
+        """Prints generated text directly to stdout."""
+        for t in self.gen_text(sentences_desired, paragraph_break_probability):
+            time_now = time.time()
+
+            if columns == 0:  # Wrapping is totally disabled. Print exactly as generated.
+                log_it("INFO: COLUMNS is zero; not wrapping text at all", 2)
+                print(the_text)
+            else:
+                if columns == -1:  # Wrap to best guess for terminal width
+                    log_it("INFO: COLUMNS is -1; wrapping text to best-guess column width", 2)
+                    padding = 0
+                else:  # Wrap to specified width (unless current terminal width is odd, in which case we're off by 1)
+                    padding = max((th.terminal_width() - columns) // 2, 0)
+                    log_it("INFO: COLUMNS is %s; padding text with %s spaces on each side" % (opts['columns'], padding), 2)
+                    log_it("NOTE: terminal width is %s" % th.terminal_width())
+                t = th.multi_replace(t, [['\n\n', '\n'], ])     # Last chance to postprocess text
+                for the_paragraph in t.split('\n'):
+                    th.print_indented(the_paragraph, each_side=padding)
+                    print()
+
+            time.sleep(max(pause - (time.time() - time_now), 0))
 
 def main(**kwargs):
     """Handle the main program loop and generate some text.
@@ -472,7 +495,7 @@ def main(**kwargs):
 
     """
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
-        generate_html_docs()
+        print_html_docs()
 
     if len(kwargs):     # If keyword arguments are passed in, trust them to be the options.
         opts = apply_defaults(defaultargs=default_args, args=kwargs)
@@ -513,29 +536,13 @@ def main(**kwargs):
     if opts['html']:
         the_text = genny.gen_html_frag(sentences_desired=opts['count'])
     else:
-        the_text = genny.gen_text(sentences_desired=opts['count'])
+        genny.print_text(sentences_desired=opts['count'], pause=opts['pause'], columns=opts['columns'])
 
-    if opts['columns'] == 0:        # Wrapping is totally disabled. Print exactly as generated.
-        log_it("INFO: COLUMNS is zero; not wrapping text at all", 2)
-        print(the_text)
-        sys.exit(0)
-    elif opts['columns'] == -1:     # Wrap to best guess for terminal width
-        log_it("INFO: COLUMNS is -1; wrapping text to best-guess column width", 2)
-        padding = 0
-    else:                           # Wrap to specified width (unless current terminal width is odd, in which case we're off by 1)
-        padding = max((th.terminal_width() - opts['columns']) // 2, 0)
-        log_it("INFO: COLUMNS is %s; padding text with %s spaces on each side" % (opts['columns'], padding), 2)
-        log_it("NOTE: terminal width is %s" % th.terminal_width())
-    the_text = th.multi_replace(the_text, [['\n\n', '\n']])
-    for the_paragraph in the_text.split('\n'):
-        th.print_indented(the_paragraph, each_side=padding)
-        print()
 
 
 if __name__ == "__main__":
     if force_test:
         import glob
-        main(count=20, load='/lovecraft/corpora/previous/Beyond the Wall of Sleep.2.pkl', html=True)
-        pass
+        main(count=20, load='/lovecraft/corpora/previous/Beyond the Wall of Sleep.2.pkl', html=False, pause=1)
     else:
         main()
