@@ -147,10 +147,9 @@ def process_acronyms(text):
 
 def process_command_line():
     """Parse the command line; return a dictionary of selected options, accounting
-    for defaults."""
-    # import argparse
-    # __version__ = "2"
-
+    for defaults.
+    """
+    
     help_epilogue = """NOTES AND CAVEATS
 
 Some options are incompatible with each other. Caveats for long options also
