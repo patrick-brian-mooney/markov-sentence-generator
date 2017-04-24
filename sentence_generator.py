@@ -16,13 +16,20 @@ it generates. You must either use -l to specify a file containing compiled
 probability data, saved with -o on a previous run, or else must specify at
 least one plain-text file (with -i or --input) for this purpose.
 
+For a list of options, run
+
+  ./sentence_generator.py --help
+
+in a terminal.
+
 It can also be imported by a Python 3 script. A typical, fairly simple use
 might be something like:
 
   #!/usr/bin/env python3
-  from sentence_generator import *
-  starts, the_mapping = _build_mapping(word_list('somefile.txt'), markov_length=2)
-  print(gen_text(the_mapping, starts, markov_length=2, sentences_desired=24))
+  import sentence_generator as sg
+  genny = sg.TextGenerator()
+  genny.train('/path/to/a/text/file', markov_length=3)
+  genny.print_text(sentences_desired=8)
 
 """
 
@@ -434,9 +441,9 @@ class TextGenerator(object):
                     sent = self._gen_sentence()    # Retry, recursively.
         return th.capitalize(sent)
 
-    def gen_text(self, sentences_desired=1, paragraph_break_probability=0.25):
+    def _produce_text(self, sentences_desired=1, paragraph_break_probability=0.25):
         """Actually generate some text."""
-        log_it("gen_text() called.", 4)
+        log_it("_produce_text() called.", 4)
         log_it("  Markov length is %d; requesting %d sentences." % (self.chains.markov_length, sentences_desired), 4)
         log_it("  Legitimate starts: %s" % self.chains.the_starts, 5)
         log_it("  Probability data: %s" % self.chains.the_mapping, 5)
@@ -454,15 +461,21 @@ class TextGenerator(object):
                 the_text = ""
         raise StopIteration
 
+    def gen_text(self, sentences_desired=1, paragraph_break_probability=0.25):
+        """Generate the full amount of text required. This is just a convenience wrapper
+        for _produce_text.
+        """
+        return '\n'.join(self._produce_text(sentences_desired, paragraph_break_probability))
+
     def gen_html_frag(self, sentences_desired=1, paragraph_break_probability=0.25):
-        """Produce the same text that gen_text would, but wrapped in HTML <p></p> tags."""
+        """Produce the same text that _produce_text would, but wrapped in HTML <p></p> tags."""
         log_it("We're generating an HTML fragment.", 3)
-        the_text = '\n'.join(self.gen_text(sentences_desired, paragraph_break_probability))
+        the_text = self._produce_text(sentences_desired, paragraph_break_probability)
         return '\n\n'.join(['<p>%s</p>' % p for p in the_text.split('\n\n')])
 
     def print_text(self, sentences_desired, paragraph_break_probability=0.25, pause=0, columns=-1):
         """Prints generated text directly to stdout."""
-        for t in self.gen_text(sentences_desired, paragraph_break_probability):
+        for t in self._produce_text(sentences_desired, paragraph_break_probability):
             time_now = time.time()
 
             if columns == 0:  # Wrapping is totally disabled. Print exactly as generated.
