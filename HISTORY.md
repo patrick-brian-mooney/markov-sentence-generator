@@ -71,3 +71,29 @@ v2.0, 20 April 2017
   * The amount of work required to keep the API consistent makes it not worthwhile.
     * Especially because, to the best of my knowledge, no one other than me is using this module.
 * Still, at this point, it's mature enough to be tested with AutoLovecraft. Which I'm about to do.
+
+24 Apr 2017
+-----------
+* All of the automatic text blogs are using it now except for *Ulysses Redux*, which will require a little more effort to rework.
+  * Well, *Ulysses Redux* is a bit more complicated a project, after all.
+  * Several minor bugs have been fixed, both in the text generator and in some of the blogs using it.
+* Some *Ulysses Redux* scripts have been rewritten, as of today:
+  * `ch07.py` ("Aeolus") -- seems to be working
+  * `ch10.py` ("Wandering Rocks` -- seems to be working
+  * `ch15.py` ("Circe") -- seems to be working
+  * `ch17.py` ("Eumaeus") -- seems to be working
+  * `generic_chapter.py`, which had its own calling interface changed; the following files that depend on it have been verified still to work:
+    * `ch14.py`
+    * `ch16.py`
+    * `ch18.py`
+    * `ch01.py`
+    * `ch02.py`
+    * `ch03.py`
+    * `ch04.py`
+    * `ch05.py`
+    * `ch06.py`
+    * `ch08.py`
+    * `ch09.py`
+    * `ch11.py`
+    * `ch12.py`
+    * `ch13.py`
