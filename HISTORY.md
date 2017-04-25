@@ -97,3 +97,4 @@ v2.0, 20 April 2017
     * `ch11.py`
     * `ch12.py`
     * `ch13.py`
+* Fixed the documentation. It should be more or less up to date now. I think.

@@ -215,10 +215,12 @@ def process_command_line():
 -w N, --columns N
     Wrap the output to N columns. If N is -1 (or not specified), the sentence
     generator does its best to wrap to the width of the current terminal. If N
-    is 0, no wrapping at all is performed, and words may be split between lines.
+    is 0, no wrapping at all is performed: words may be split between lines.
 
 -p N, --pause N
-    Pause NUM seconds after each paragraph is printed.
+    Pause approximately NUM seconds after each paragraph is printed. The actual
+    pause may not be quite exactly NUM seconds, though the program tries to get
+    this right to the greatest extent possible.
 
 --html
     Wrap paragraphs of text output by the program with HTML paragraph tags. This
