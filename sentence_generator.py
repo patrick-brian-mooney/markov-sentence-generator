@@ -264,7 +264,9 @@ apply to the short versions of the same options.
             sense.)
 
             It also cannot be used with -p/--pause, because HTML output is not
-            designed to be printed directly to the terminal, anyway.
+            intended to be printed directly to the terminal; and there's rarely
+            any point in artificially slowing down content production intended
+            for a web server, is there?
 
   --output  does NOT specify an output file into which the generated text is
             saved. To do that, use shell redirection, e.g. by doing something
@@ -272,7 +274,8 @@ apply to the short versions of the same options.
 
                 ./sentence_generator -i somefile.txt > outputfile.txt
 
-This program is licensed under the GPL v3 or, at your option, any later version. See the file LICENSE.md for details.
+This program is licensed under the GPL v3 or, at your option, any later version.
+See the file LICENSE.md for details.
 
 """
     parser = argparse.ArgumentParser(description="This program generates random (but often intelligible) text based on a frequency\nanalysis of one or more existing texts. It is based on Harry R. Schwartz's\nMarkov sentence generator, but is intended to be more flexible for use in my own\nvarious text-generation projects.", epilog=help_epilogue, formatter_class=argparse.RawDescriptionHelpFormatter)
