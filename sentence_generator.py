@@ -49,47 +49,14 @@ from patrick_logger import log_it
 patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
 
-force_test = False                  # IF we need to fake command-line arguments in an IDE for testing ...
+force_test = True                  # IF we need to fake command-line arguments in an IDE for testing ...
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
 punct_with_no_space_before = r'.,!?;—․-:/'
 punct_with_no_space_after = r'—-/․'             # Note: that last character is U+2024, "one-dot leader".
 word_punct = r"'’❲❳%°#․$"                       # Punctuation marks to be considered part of a word.
-token_punct = r".,\:\-!?;—\/&…"                 # These punctuation marks also count as tokens.
-
-final_substitutions = [                 # list of lists. each sublist:[search_regex, replace_regex]. Subs performed in order specified.
-    ['--', '—'],
-    ['\.\.\.', '…'],
-    ['․', '.'],                         # replace one-dot leader with period
-    ['\.\.', '.'],
-    [" ' ", ''],
-    ['――', '―'],                        # Two horizontal bars to one horizontal bar
-    ['―-', '―'],                        # Horizontal bar-hyphen to single horizontal bar
-    [':—', ': '],
-    ["\n' ", '\n'],                     # newline--single quote--space
-    ["<p>'", '<p>'],
-    ["<p> ", '<p>'],                    # <p>-space to <p> (without space)
-    ["<p></p>", ''],                    # <p></p> to nothing
-    ['- ', '-'],                        # hyphen-space to hyphen
-    ['—-', '—'],                        # em dash-hyphen to em dash
-    ['——', '—'],                        # two em dashes to one em dash
-    ['([0-9]),\s([0-9])', r'\1,\2'],    # Remove spaces after commas when commas are between numbers.
-    ['([0-9]):\s([0-9])', r'\1:\2'],    # Remove spaces after colons when colons are between numbers.
-    ['…—', '… —'],                      # put space in between ellipsis-em dash, if they occur together.
-]
-
-default_args = {'chars': False,
-                'columns': -1,
-                'count': 1,
-                'html': False,
-                'input': [],
-                'load': None,
-                'markov_length': 1,
-                'output': None,
-                'pause': 0,
-                'quiet': 0,
-                'verbose': 0}
+token_punct = r".,:\-!?;—/&…⸻"                # These punctuation marks also count as tokens.
 
 
 def print_usage():
@@ -381,17 +348,82 @@ class TextGenerator(object):
     """A general-purpose text generator. To use it, instantiate it, train it, and
     then have it generate text.
     """
+    def __str__(self):
+        if self.is_trained():
+            return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
+        else:
+            return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
+
     def __init__(self, name=None):
         """Create a new instance."""
         self.name = name                                # NAME is totally optional and entirely for your benefit.
         self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
         self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences?
 
-    def __str__(self):
-        if self.is_trained():
-            return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
-        else:
-            return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
+        # This next is the default list of substitutions that happen after text is produced.
+        # List of lists. each sublist:[search_regex, replace_regex]. Subs performed in order specified.
+        self.final_substitutions = [
+            ['--', '—'],
+            ['\.\.\.', '…'],
+            ['․', '.'],                         # replace one-dot leader with period
+            ['\.\.', '.'],
+            [" ' ", ''],
+            ['――', '―'],                        # Two horizontal bars to one horizontal bar
+            ['―-', '―'],                        # Horizontal bar-hyphen to single horizontal bar
+            [':—', ': '],
+            ["\n' ", '\n'],                     # newline--single quote--space
+            ["<p>'", '<p>'],
+            ["<p> ", '<p>'],                    # <p>-space to <p> (without space)
+            ["<p></p>", ''],                    # <p></p> to nothing
+            ['- ', '-'],                        # hyphen-space to hyphen
+            ['—-', '—'],                        # em dash-hyphen to em dash
+            ['——', '—'],                        # two em dashes to one em dash
+            ['([0-9]),\s([0-9])', r'\1,\2'],    # Remove spaces after commas when commas are between numbers.
+            ['([0-9]):\s([0-9])', r'\1:\2'],    # Remove spaces after colons when colons are between numbers.
+            ['…—', '… —'],                      # put space in between ellipsis-em dash, if they occur together.
+        ]
+
+
+    def add_final_substitution(self, substitution, position=-1):
+        """Add another substitution to the list of substitutions performed after text is
+        generated. Since the final substitutions are performed in the order they're
+        listed, position matters; the POSITION parameter indicates what position in the
+        list the new substitution will appear. If POSITION is -1 (the default), the new
+        substitution appears at the end of the list.
+        """
+        assert isinstance(substitution, (list, tuple)), "ERROR: the substitution you pass in must be a list or tuple."
+        assert len(substitution) == 2, "ERROR: the substitution you pass in must be two items long."
+        if position == -1: position = len(self.final_substitutions)
+        self.final_substitutions.insert(position, substitution)
+
+    def remove_final_substitution(self, substitution):
+        """Remove SUBSTITUTION from the list of final substitutions performed after text
+        is generated. You must pass in *exactly* the substitution you want to remove.
+        If you try to remove something that's not there, this routine will let the error
+        raised by the list (which is always[?] ValueError) propagate -- trap it if you
+        need to.
+        """
+        assert isinstance(substitution, (list, tuple)), "ERROR: the substitution you pass in must be a list or tuple."
+        assert len(substitution) == 2, "ERROR: the substitution you pass in must be two items long."
+        self.final_substitutions.remove(substitution)
+
+    def get_final_substitutions(self):
+        """Returns the list of final substitutions that are performed by the text generator
+        before returning the text. Just a quick index into a variable in the object
+        namespace.
+        """
+        return self.final_substitutions
+
+    def set_final_substitutions(self, substitutions):
+        """Set the list of final substitutions that are performed on generated text before
+        it's returned. SUBSTITUTIONS must be a list of two-item lists, of the form
+        [regex to search for, replacement], as in the default list in the __init__()
+        method for the class.
+        """
+        for sublist in substitutions:       # Do some basic error-checking
+            assert isinstance(sublist, (list, tuple)), "ERROR: substitution %s is not a list or tuple." % sublist
+            assert len(sublist) == 2, "ERROR: substitution %s is not two items long." % sublist
+        self.final_substitutions = substitutions
 
     @staticmethod
     def addItemToTempMapping(history, word, the_temp_mapping):
@@ -487,7 +519,7 @@ class TextGenerator(object):
 
     def train(self, the_files, markov_length=1, character_tokens=False):
         """Train the model from a list of text files supplied as THE_FILES."""
-        assert isinstance(the_files, list) or isinstance(the_files, tuple), "ERROR: you cannot pass an object of type %s to %s.train" % (type(the_files), self)
+        assert isinstance(the_files, (list, tuple)), "ERROR: you cannot pass an object of type %s to %s.train" % (type(the_files), self)
         assert len(the_files) > 0, "ERROR: empty file list passed to %s.train()" % self
         the_text = ""
         for which_file in the_files:
@@ -544,15 +576,14 @@ class TextGenerator(object):
                 pass                            #   ... well, we don't need to add a space to the beginning of the text, then.
             the_text = the_text + self._gen_sentence()
             if random.random() <= paragraph_break_probability or which_sentence == sentences_desired - 1:
-                the_text = th.multi_replace(the_text, final_substitutions)
+                the_text = th.multi_replace(the_text, self.final_substitutions)
                 yield the_text.strip() + "\n"
                 the_text = ""
         raise StopIteration
 
     def gen_text(self, sentences_desired=1, paragraph_break_probability=0.25):
         """Generate the full amount of text required. This is just a convenience wrapper
-        for _produce_text(
-).
+        for _produce_text().
         """
         return '\n'.join(self._produce_text(sentences_desired, paragraph_break_probability))
 
@@ -583,19 +614,31 @@ class TextGenerator(object):
                     if the_paragraph:                   # Skip any empty paragraphs that may pop up
                         th.print_indented(the_paragraph, each_side=padding)
                         print()
+            time.sleep(max(pause - (time.time() - time_now), 0))    # Pause until it's time for a new paragraph.
 
-            time.sleep(max(pause - (time.time() - time_now), 0))
+
+default_args = {'chars': False,
+                'columns': -1,
+                'count': 1,
+                'html': False,
+                'input': [],
+                'load': None,
+                'markov_length': 1,
+                'output': None,
+                'pause': 0,
+                'quiet': 0,
+                'verbose': 0}
 
 def main(**kwargs):
     """Handle the main program loop and generate some text.
 
     By default, this routine can simply be called as main(), with no arguments; this
-    is what happens when the script is called from the command line. However, for
-    testing purposes, it can also be called with keyword arguments in the same
-    format that the command line would be parsed, i.e. with something like
+    is what happens when the script is called from the command line. In this case,
+    it parses the arguments passed on the command line. However, for testing
+    purposes, it can also be called with keyword arguments in the same format that
+    the command line would be parsed, i.e. with something like
 
         main(markov_length=2, input=['Song of Solomon.txt'], count=20, chars=True)
-
     """
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         print_html_docs()
