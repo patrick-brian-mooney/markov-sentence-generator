@@ -26,8 +26,8 @@ It can also be imported by a Python 3 script. A typical, fairly simple use
 might be something like:
 
   #!/usr/bin/env python3
-  import sentence_generator as sg
-  genny = sg.TextGenerator()
+  import text_generator as tg
+  genny = tg.TextGenerator()
   genny.train('/path/to/a/text/file', markov_length=3)
   genny.print_text(sentences_desired=8)
 

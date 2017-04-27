@@ -10,10 +10,10 @@ Overview
 
 1. Import the module, e.g. with `import sentence_generator as sg`
 2. Instantiate a `TextGenerator` object, e.g. with `genny = sg.TextGenerator()`
-  * If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like `genny = sg.TextGenerator(name="MyTextGenerator")`; this does nothing except cause the name to be printed if the generator itself is printed
+  a. If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like `genny = sg.TextGenerator(name="MyTextGenerator")`; this does nothing except cause the name to be printed if the generator itself is printed
 3. Train the object on a sample text (or multiple texts), which it will model and then use as the basis for creating text, e.g. with `genny.train(['/path/to/file.txt'])`
-  * Note that you have to pass a list of files, even if that list only has one pathname.
+  a. Note that you have to pass a list of files, even if that list only has one pathname.
 4. Use the generator to produce some new text, e.g. with `genny.print_text(sentences_desired=8)`
-  * There are other ways to generate text than just printing it to the terminal; read on for more details.
+  a. There are other ways to generate text than just printing it to the terminal; read on for more details.
   
 You can (of course!) use `help(sg)` or `dir(sg)` to explore the built-in documentation for the module.
