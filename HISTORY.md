@@ -107,4 +107,4 @@ v2.0, 20 April 2017
   * `TextGenerator.remove_final_substitution()`
   * `TextGenerator.get_final_substitutions()`
   * `TextGenerator.set_final_substitutions()`
-* Wrote first quick draft of a document describing using the text generator.
+* Wrote first quick draft of a document describing using the text generator. It needs updating.

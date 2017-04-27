@@ -8,12 +8,22 @@ Overview
 
 `sentence_generator.py` is a Python module that exposes a `TextGenerator()` object. In order to generate text with it, you need to ...
 
-1. Import the module, e.g. with `import sentence_generator as sg`
-2. Instantiate a `TextGenerator` object, e.g. with `genny = sg.TextGenerator()`
-  a. If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like `genny = sg.TextGenerator(name="MyTextGenerator")`; this does nothing except cause the name to be printed if the generator itself is printed
-3. Train the object on a sample text (or multiple texts), which it will model and then use as the basis for creating text, e.g. with `genny.train(['/path/to/file.txt'])`
-  a. Note that you have to pass a list of files, even if that list only has one pathname.
-4. Use the generator to produce some new text, e.g. with `genny.print_text(sentences_desired=8)`
-  a. There are other ways to generate text than just printing it to the terminal; read on for more details.
+<ol>
+<li>Import the module, e.g. with <code>import sentence_generator as sg</code></li>
+<li>Instantiate a `TextGenerator` object, e.g. with <code>genny = sg.TextGenerator()</code>
+  <ol>
+    <li>If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like `genny = sg.TextGenerator(name="MyTextGenerator")</code>; this does nothing except cause the name to be printed if the generator object itself is passed to a procedure that creates a print representation</li>
+  </ol>
+</li>
+<li>Train the object on a sample text (or multiple texts), which it will model and then use as the basis for creating text, e.g. with <code>genny.train(['/path/to/file.txt'])</code>
+  <ol>
+    <li>Note that you have to pass a <em>list</em> of files, even if that list only has one pathname.</li>
+  </ol>
+</li>
+<li>Use the generator to produce some new text, e.g. with <code>genny.print_text(sentences_desired=8)</code>
+  <ol>
+    <li>There are other ways to generate text than just printing it to the terminal; read on for more details.</li>
+  </ol>
+</li>
   
 You can (of course!) use `help(sg)` or `dir(sg)` to explore the built-in documentation for the module.
