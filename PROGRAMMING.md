@@ -25,5 +25,6 @@ Overview
     <li>There are other ways to generate text than just printing it to the terminal; read on for more details.</li>
   </ol>
 </li>
+</ol>
   
 You can (of course!) use `help(sg)` or `dir(sg)` to explore the built-in documentation for the module.
