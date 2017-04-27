@@ -49,7 +49,7 @@ from patrick_logger import log_it
 patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
 
-force_test = True                  # IF we need to fake command-line arguments in an IDE for testing ...
+force_test = False                  # IF we need to fake command-line arguments in an IDE for testing ...
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
@@ -591,7 +591,7 @@ class TextGenerator(object):
         """Produce the same text that _produce_text would, but wrapped in HTML <p></p> tags."""
         log_it("We're generating an HTML fragment.", 3)
         the_text = self._produce_text(sentences_desired, paragraph_break_probability)
-        return '\n\n'.join(['<p>%s</p>' % p for p in the_text.split('\n\n')])
+        return '\n\n'.join(['<p>%s</p>' % p.strip() for p in the_text])
 
     def print_text(self, sentences_desired, paragraph_break_probability=0.25, pause=0, columns=-1):
         """Prints generated text directly to stdout."""
@@ -600,7 +600,7 @@ class TextGenerator(object):
 
             if columns == 0:  # Wrapping is totally disabled. Print exactly as generated.
                 log_it("INFO: COLUMNS is zero; not wrapping text at all", 2)
-                print(the_text)
+                print(t)
             else:
                 if columns == -1:  # Wrap to best guess for terminal width
                     log_it("INFO: COLUMNS is -1; wrapping text to best-guess column width", 2)
@@ -682,6 +682,7 @@ def main(**kwargs):
     # And generate some text.
     if opts['html']:
         the_text = genny.gen_html_frag(sentences_desired=opts['count'])
+        print(the_text)
     else:
         genny.print_text(sentences_desired=opts['count'], pause=opts['pause'], columns=opts['columns'])
 
