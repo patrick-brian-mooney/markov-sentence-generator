@@ -39,6 +39,7 @@ Pulled regex patterns to the front of the file, as constants. (Well, Python does
 
 (missing notes, partially told in commit history)
 
+
 v1.2, 24 January 2017
 ---------------------
 Coming back to quick documentation of changes here.
@@ -72,8 +73,8 @@ v2.0, 20 April 2017
     * Especially because, to the best of my knowledge, no one other than me is using this module.
 * Still, at this point, it's mature enough to be tested with AutoLovecraft. Which I'm about to do.
 
-24 Apr 2017
------------
+24 April 2017
+-------------
 * All of the automatic text blogs are using it now except for *Ulysses Redux*, which will require a little more effort to rework.
   * Well, *Ulysses Redux* is a bit more complicated a project, after all.
   * Several minor bugs have been fixed, both in the text generator and in some of the blogs using it.
@@ -98,3 +99,12 @@ v2.0, 20 April 2017
     * `ch12.py`
     * `ch13.py`
 * Fixed the documentation. It should be more or less up to date now. I think.
+
+26 April 2017
+-------------
+* Added a series of interfaces to the set of final text-massaging substitutions that are performed on generated text.
+  * `TextGenerator.add_final_substitution()`
+  * `TextGenerator.remove_final_substitution()`
+  * `TextGenerator.get_final_substitutions()`
+  * `TextGenerator.set_final_substitutions()`
+* Wrote first quick draft of a document describing using the text generator.
