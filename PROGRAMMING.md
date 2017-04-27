@@ -12,7 +12,7 @@ Overview
 <li>Import the module, e.g. with <code>import sentence_generator as sg</code></li>
 <li>Instantiate a `TextGenerator` object, e.g. with <code>genny = sg.TextGenerator()</code>
   <ol>
-    <li>If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like `genny = sg.TextGenerator(name="MyTextGenerator")</code>; this does nothing except cause the name to be printed if the generator object itself is passed to a procedure that creates a print representation</li>
+    <li>If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like <code>genny = sg.TextGenerator(name="MyTextGenerator")</code>; this does nothing except cause the name to be printed if the generator object itself is passed to a procedure that creates a print representation</li>
   </ol>
 </li>
 <li>Train the object on a sample text (or multiple texts), which it will model and then use as the basis for creating text, e.g. with <code>genny.train(['/path/to/file.txt'])</code>
