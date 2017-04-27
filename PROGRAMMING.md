@@ -1,7 +1,7 @@
 Programming the Markov Sentence Generator
 =========================================
 
-This document describes how to use Patrick Mooney's Markov chain-based sentence generator from Python 3.X code. Python 2.X is not supported. (Python 3.X has now been out for more than half of all the time since Python's first public release.) If what you're looking for is instructions for using the Markov chain-based sentence generator from your terminal rather than from Python code, you're reading the wrong document: you should look at the <a rel="me author" href="https://github.com/patrick-brian-mooney/markov-sentence-generator/blob/master/README.md">README</a> file instead.
+This document describes how to use Patrick Mooney's Markov chain-based sentence generator from Python 3.X code. Python 2.X is not supported. (Python 3.X has now been out for longer than 2.X was out before 3.X was out.) If what you're looking for is instructions for using the Markov chain-based sentence generator from your terminal rather than from Python code, you're reading the wrong document: you should look at the <a rel="me author" href="https://github.com/patrick-brian-mooney/markov-sentence-generator/blob/master/README.md">README</a> file instead.
 
 Overview
 --------
