@@ -9,16 +9,16 @@ files README.md and LICENSE.md for more details.
 
 USAGE:
 
-  ./sentence_generator.py [options] -i FILENAME [-i FILENAME ] | -l FILENAME
+  ./text_generator.py [options] -i FILENAME [-i FILENAME ] | -l FILENAME
 
-sentence_generator.py needs existing text to use as the basis for the text that
+text_generator.py needs existing text to use as the basis for the text that
 it generates. You must either use -l to specify a file containing compiled
 probability data, saved with -o on a previous run, or else must specify at
 least one plain-text file (with -i or --input) for this purpose.
 
 For the full list of options, run
 
-  ./sentence_generator.py --help
+  ./text_generator.py --help
 
 in a terminal.
 
@@ -239,7 +239,7 @@ apply to the short versions of the same options.
             saved. To do that, use shell redirection, e.g. by doing something
             like:
 
-                ./sentence_generator -i somefile.txt > outputfile.txt
+                ./text_generator -i somefile.txt > outputfile.txt
 
 This program is licensed under the GPL v3 or, at your option, any later version.
 See the file LICENSE.md for details.
@@ -257,7 +257,7 @@ See the file LICENSE.md for details.
     parser.add_argument('--html', action='store_true')
     parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('-q', '--quiet', action='count', default=0)
-    parser.add_argument('--version', action='version', version='sentence_generator.py %s' % __version__.strip('$').strip())
+    parser.add_argument('--version', action='version', version='text_generator.py %s' % __version__.strip('$').strip())
     return vars(parser.parse_args())
 
 def to_hash_key(lst):
@@ -350,12 +350,23 @@ class TextGenerator(object):
     """
     def __str__(self):
         if self.is_trained():
-            return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
+            if self.name:
+                return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
+            else:
+                return '< class %s (unnamed instance), with Markov length %d' % (self.__class__, self.chains.markov_length)
         else:
-            return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
+            if self.name:
+                return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
+            else:
+                return '< class %s (unnamed instance), UNTRAINED >' % self.__class__
 
-    def __init__(self, name=None):
-        """Create a new instance."""
+    def __init__(self, name=None, training_texts=None):
+        """Create a new instance. NAME is entirely optional, and is mentioned for 
+        convenience (if it exists) any time a string representation is generated.
+        If TRAINING_TEXTS is not None, it should be a *list* of one or more
+        filenames on which the generator will be immediately trained. (You can
+        instead call train() separately, if you wish.)
+        """
         self.name = name                                # NAME is totally optional and entirely for your benefit.
         self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
         self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences?
@@ -382,6 +393,8 @@ class TextGenerator(object):
             ['([0-9]):\s([0-9])', r'\1:\2'],    # Remove spaces after colons when colons are between numbers.
             ['…—', '… —'],                      # put space in between ellipsis-em dash, if they occur together.
         ]
+        if training_texts:
+            self.train(training_texts)
 
 
     def add_final_substitution(self, substitution, position=-1):
@@ -518,7 +531,10 @@ class TextGenerator(object):
                             markov_length=markov_length, character_tokens=character_tokens)
 
     def train(self, the_files, markov_length=1, character_tokens=False):
-        """Train the model from a list of text files supplied as THE_FILES."""
+        """Train the model from a text file, or a list of text files supplied,
+         as THE_FILES.
+         """
+        if isinstance(the_files, (str, bytes)): the_files = [ the_files ]
         assert isinstance(the_files, (list, tuple)), "ERROR: you cannot pass an object of type %s to %s.train" % (type(the_files), self)
         assert len(the_files) > 0, "ERROR: empty file list passed to %s.train()" % self
         the_text = ""

@@ -62,7 +62,7 @@ v2.0, 20 April 2017
 * The parser has been rewritten to have an object-oriented interface when it's used as a library.
   * Passing around multiple variables for different aspects of the data was getting really unwieldy.
   * This makes everything a lot more conceptually simple, too: some ugly code has been eliminated.
-  * This opens up more conceptually simple optoins for similar parsers with subclassing with minimal fuss.
+  * This opens up more conceptually simple options for similar parsers with subclassing with minimal fuss.
     * Spoiler: there's going to be a first-pass poetry generator in the not-too-distant future.
 * All command-line options are now working except for `-p`/`--pause`.
   * When that's working, the initial v2 will be merged into the master branch.
@@ -107,4 +107,10 @@ v2.0, 20 April 2017
   * `TextGenerator.remove_final_substitution()`
   * `TextGenerator.get_final_substitutions()`
   * `TextGenerator.set_final_substitutions()`
-* Wrote first quick draft of a document describing using the text generator. It needs updating.
+* Wrote first quick draft of a document describing the programming API to the text generator. It needs updating.
+
+v2.1, 5 May 2017
+----------
+* Updated some of the documentation, including the internal documentation to the script itself, which still occasionally referred to `text_generator` as `sentence_generator`. Whoops.
+* Generating strings from a `TextGenerator()` object (i.e., anything that winds up funneling to a call to the object's `__str__()` method) now takes the possibility of unnamed generators into account with a bit more elegance.
+* As a convenience, it's now possible to pass just a path to a file to the `train()` method instead of passing a list with one item.

@@ -6,18 +6,19 @@ This document describes how to use Patrick Mooney's Markov chain-based sentence 
 Overview
 --------
 
-`sentence_generator.py` is a Python module that exposes a `TextGenerator()` object. In order to generate text with it, you need to ...
+`text_generator.py` is a Python module that exposes a `TextGenerator()` object. In order to generate text with it, you need to ...
 
 <ol>
-<li>Import the module, e.g. with <code>import sentence_generator as sg</code></li>
-<li>Instantiate a `TextGenerator` object, e.g. with <code>genny = sg.TextGenerator()</code>
+<li>Import the module, e.g. with <code>import text_generator as sg</code></li>
+<li>Instantiate a `TextGenerator` object, e.g. with <code>genny = tg.TextGenerator()</code>
   <ol>
-    <li>If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like <code>genny = sg.TextGenerator(name="MyTextGenerator")</code>; this does nothing except cause the name to be printed if the generator object itself is passed to a procedure that creates a print representation</li>
+    <li>If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like <code>genny = tg.TextGenerator(name="MyTextGenerator")</code>; this does nothing except cause the name to be printed if the generator object itself is passed to a procedure that creates a print representation</li>
   </ol>
 </li>
 <li>Train the object on a sample text (or multiple texts), which it will model and then use as the basis for creating text, e.g. with <code>genny.train(['/path/to/file.txt'])</code>
   <ol>
-    <li>Note that you have to pass a <em>list</em> of files, even if that list only has one pathname.</li>
+    <li>Note that you have to pass a <em>list</em> (or tuple, or other list-like structure) of files, even if that list only has one pathname.</li>
+    <li>If you prefer, you can instead pass this list of files as the <code>training_texts</code> parameter when creating the object, as so: <code>genny = tg.TextGenerator(name="AwesomeTextGenerator", training_texts=['/path/to/a/text'])</code>
   </ol>
 </li>
 <li>Use the generator to produce some new text, e.g. with <code>genny.print_text(sentences_desired=8)</code>
