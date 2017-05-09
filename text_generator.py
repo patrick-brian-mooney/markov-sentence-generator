@@ -75,7 +75,7 @@ def print_html_docs():
 <p>Code is available <a rel="muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator">here</a>.</p>
 <pre>%s</pre>
 </body>
-</html>"""% __doc__)
+</html>""" % __doc__)
     sys.exit(0)
 
 
@@ -280,15 +280,15 @@ def apply_defaults(defaultargs, args):
     return ret
 
 def fix_caps(word):
-    """HRS initially said:
-    "We want to be able to compare words independent of their capitalization."
-
-    I disagree, though, so I'm commenting out this routine to see how that plays
-    out.
-
-    Schwartz further said:
-    # Ex: "FOO" -> "foo"
-    if word.isupper() and word != "I":
+    """This is Harry Schwartz's token comparison function, allowing words (other than
+    "I") to be compared regardless of capitalization. I don't tend to use it, but
+    if you want to, set the comparison_form attribute to point to it: something
+    like 
+    
+        genny.comparison_function = fix_caps
+    """
+    
+    if word.isupper() and word != "I":      # I suspect this doesn't work the way Schwartz thinks it does, but haven't tested it.
         word = word.lower()
         # Ex: "LaTeX" => "Latex"
     elif word[0].isupper():
@@ -296,7 +296,6 @@ def fix_caps(word):
         # Ex: "wOOt" -> "woot"
     else:
         word = word.lower()
-    """
     return word
 
 
@@ -376,6 +375,7 @@ class TextGenerator(object):
         self.name = name                                # NAME is totally optional and entirely for your benefit.
         self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
         self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences?
+        self.comparison_form = lambda x: x              # i.e., don't perform any preprocessing on comparing
 
         # This next is the default list of substitutions that happen after text is produced.
         # List of lists. each sublist:[search_regex, replace_regex]. Subs performed in order specified.
@@ -516,8 +516,7 @@ class TextGenerator(object):
         self.chains.markov_length = markov_length
         self.chains.character_tokens = character_tokens
 
-    @staticmethod
-    def _token_list(the_string, character_tokens=False):
+    def _token_list(self, the_string, character_tokens=False):
         """Converts a string into a set of tokens so that the text generator can
         process, and therefore be trained by, it.
         ."""
@@ -525,7 +524,7 @@ class TextGenerator(object):
             tokens = list(the_string)
         else:
             tokens = re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_string)
-        return [fix_caps(w) for w in tokens]
+        return [self.comparison_form(w) for w in tokens]
 
     def is_trained(self):
         """Detect whether this model is trained or not."""
