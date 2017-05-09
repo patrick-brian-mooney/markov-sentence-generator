@@ -360,12 +360,18 @@ class TextGenerator(object):
             else:
                 return '< class %s (unnamed instance), UNTRAINED >' % self.__class__
 
-    def __init__(self, name=None, training_texts=None):
+    def __init__(self, name=None, training_texts=None, **kwargs):
         """Create a new instance. NAME is entirely optional, and is mentioned for 
         convenience (if it exists) any time a string representation is generated.
         If TRAINING_TEXTS is not None, it should be a *list* of one or more
-        filenames on which the generator will be immediately trained. (You can
-        instead call train() separately, if you wish.)
+        filenames on which the generator will be immediately trained. If you want
+        to specify parameters to train() other than just a list of files (e.g., if
+        you want to pass a markov_length parameter so that the chains have a length
+        greater than one), you can pass them as keyword arguments here, at the end
+        of the parameter list; anything not collected by the keyword arguments
+        explicitly specified in this function's definition will be passed on to
+        train(). (Or, you can instead call train() separately after object
+        creation, if you wish.)
         """
         self.name = name                                # NAME is totally optional and entirely for your benefit.
         self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
@@ -394,7 +400,7 @@ class TextGenerator(object):
             ['…—', '… —'],                      # put space in between ellipsis-em dash, if they occur together.
         ]
         if training_texts:
-            self.train(training_texts)
+            self.train(training_texts, **kwargs)
 
 
     def add_final_substitution(self, substitution, position=-1):

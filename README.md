@@ -4,13 +4,13 @@ Patrick Mooney's Markov Sentence Generator
 v2.0, 24 April 2017
 ----------------------
 
-This program generates (one or more sentences of) "natural-sounding" random text based on an existing text (or more than one text) that it analyzes and models. That is to say, given some sample text, the program creates a set of Markov chains that models those input text(s) and then generates new text by randomly traversing that set of chains.  Use it from the terminal by doing something like:
+This program generates (one or more sentences of) "natural-sounding" random text based on an existing text (or more than one text) that it analyzes, creates a model of, and uses as the basis for the new text that it generates. That is to say, given some sample text, the program creates a set of Markov chains that models those input text(s) and then generates new text by randomly traversing that set of chains.  Use it from the terminal by doing something like:
 
-`$ ./sentence_generator.py [options] -i FILENAME [-i FILENAME ] [-i filename ...]`
+`$ ./text_generator.py [options] -i FILENAME [-i FILENAME ] [-i filename ...]`
 
-Note that non-Linux users may need to drop the `./` at the beginning of those commands. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome.
+Note that users of non-Unix-based operating systems (notably Windows) may need to drop the `./` at the beginning of those commands. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome.
 
-`sentence_generator.py` needs existing text to use as the basis for the text that it generates. You must either specify at least one plain-text file (with `-i` or `--input`) for this purpose, or else must use `-l` or `--load` to specify a file containing compiled probability data ("saved chains"), created with `-o` on a previous run. The `-l` (or `--load`) option is a convenience to save processing time: the program will run more quickly, but you can't combine `-l`/`--load` with `-i`/`--input`, nor can you use more than one `-l`/`--load` in a single program run. There are other options—those that would alter an existing model, primarily—that are incompatible with `-l`/`--load`, too. See below for more details.
+`text_generator.py` needs existing text to use as the basis for the text that it generates. You must either specify at least one plain-text file (with `-i` or `--input`) for this purpose, or else must use `-l` or `--load` to specify a file containing compiled probability data ("saved chains"), created with `-o` on a previous run. The `-l` (or `--load`) option is a convenience to save processing time: the program will run more quickly, but you can't combine `-l`/`--load` with `-i`/`--input`, nor can you use more than one `-l`/`--load` in a single program run. There are other options—those that would alter an existing model, primarily—that are incompatible with `-l`/`--load`, too. See below for more details.
 
 If you're looking for something to play with, try passing in a book from Project Gutenberg with `-i` or `--input`, and trying using different (fairly small) integers to the `-m` parameter, e.g. `-m 2` or `-m 5`.
 
@@ -32,7 +32,7 @@ A quick reference list of options you can pass in:
 <tr><td>&nbsp;</td><td><code>--html</code></td><td>Wrap paragraphs of text output by the program with &lt;p&gt; ... &lt;/p&gt;. Cannot be used with <code>--load</code> or <code>-1</code>.</td></tr> 
 </table>
 
-You can use `./sentence_generator.py --help` to get more detailed usage information. 
+You can use `./text_generator.py --help` to get more detailed usage information. 
 
 Chain length defaults to 1 (which is fastest), but increasing this may generate more "realistic" text (depending on what you think that means and how lucky the algorithm gets on a particular run), though slightly more slowly and at the cost of requiring additional memory (and disk space, if you save the generated chains with `-o`).  Depending on the text, increasing the chain length past 6 or 7 words probably won't do much good—at that point you're usually plucking whole sentences from the source text(s) anyway, so using a Markov model to pick sentences is probably overkill.
 
