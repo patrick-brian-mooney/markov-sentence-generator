@@ -1,7 +1,7 @@
 Patrick Mooney's Markov Sentence Generator
 ==========================================
 
-v2.0, 24 April 2017
+v2.1, 5 May 2017
 ----------------------
 
 This program generates (one or more sentences of) "natural-sounding" random text based on an existing text (or more than one text) that it analyzes, creates a model of, and uses as the basis for the new text that it generates. That is to say, given some sample text, the program creates a set of Markov chains that models those input text(s) and then generates new text by randomly traversing that set of chains.  Use it from the terminal by doing something like:

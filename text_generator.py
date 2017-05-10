@@ -34,7 +34,7 @@ might be something like:
 """
 
 __author__ = "Patrick Mooney, http://patrickbrianmooney.nfshost.com/~patrick/"
-__version__ = "$v2.0 $"
+__version__ = "$v2.1 $"
 __date__ = "$Date: 2017/04/24 16:16:00 $"
 __copyright__ = "Copyright (c) 2015-17 Patrick Mooney"
 __license__ = "GPL v3, or, at your option, any later version"
