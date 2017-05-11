@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Patrick Mooney's Markov sentence generator, %s.
+"""This is Patrick Mooney's Markov sentence generator. It is licensed under the
+GNU GPL,either version 3, or (at your option) any later version. See the files
+README.md and LICENSE.md for more details.
 
-This script is available at
-https://github.com/patrick-brian-mooney/markov-sentence-generator. See the
-files README.md and LICENSE.md for more details.
+Find it at https://github.com/patrick-brian-mooney/markov-sentence-generator.
 
 USAGE:
 
@@ -359,8 +359,9 @@ class TextGenerator(object):
                 return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
             else:
                 return '< class %s (unnamed instance), UNTRAINED >' % self.__class__
-
-    def comparison_form(self, word):
+    
+    @staticmethod
+    def comparison_form(word):
         """This function is called to normalize the words for the purpose of storing
         them in the list of Markov chains, and for looking at previous words when
         deciding what the next word in the sequence should be. By default, this
@@ -456,13 +457,13 @@ class TextGenerator(object):
 
     @staticmethod
     def addItemToTempMapping(history, word, the_temp_mapping):
-        '''Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
+        """Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
         the_temp_mapping (and the_mapping) both match each word to a list of possible next
         words.
 
         Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
         the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
-        '''
+        """
         while len(history) > 0:
             first = to_hash_key(history)
             if first in the_temp_mapping:
@@ -622,7 +623,7 @@ class TextGenerator(object):
         the_text = self._produce_text(sentences_desired, paragraph_break_probability)
         return '\n\n'.join(['<p>%s</p>' % p.strip() for p in the_text])
 
-    def printer(self, what, columns=-1):
+    def _printer(self, what, columns=-1):
         """Print WHAT in an appropriate way, wrapping to the specified number of
         COLUMNS. Override this function to change its behavior.
         """
@@ -647,7 +648,7 @@ class TextGenerator(object):
         """Prints generated text directly to stdout."""
         for t in self._produce_text(sentences_desired, paragraph_break_probability):
             time_now = time.time()
-            self.printer(t, columns=columns)
+            self._printer(t, columns=columns)
             time.sleep(max(pause - (time.time() - time_now), 0))    # Pause until it's time for a new paragraph.
 
 
@@ -663,7 +664,7 @@ default_args = {'chars': False,
                 'quiet': 0,
                 'verbose': 0}
 
-def main(**kwargs):
+def main(generator_class=TextGenerator, **kwargs):
     """Handle the main program loop and generate some text.
 
     By default, this routine can simply be called as main(), with no arguments; this
@@ -673,6 +674,12 @@ def main(**kwargs):
     the command line would be parsed, i.e. with something like
 
         main(markov_length=2, input=['Song of Solomon.txt'], count=20, chars=True)
+        
+    To allow this code to be reused to create command-line interfaces in modules
+    that subclass TextGenerator(), it is also possible to specify the class of the
+    text generator that's created. By default, of course, it's just the basic 
+    TextGenerator class, but see poetry_generator for a sample of how this can be
+    done. 
     """
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         print_html_docs()
@@ -705,7 +712,7 @@ def main(**kwargs):
 
     # Now instantiate and train the model, and save the compiled chains, if that's what the user wants
     print()                     # Cough up a blank line at the beginning.
-    genny = TextGenerator()
+    genny = generator_class()
     if opts['load']:
         genny.chains.read_chains(filename=opts['load'])
     else:
