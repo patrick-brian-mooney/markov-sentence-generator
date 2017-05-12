@@ -15,7 +15,7 @@ import text_generator as tg
 force_test = False
 
 
-class poem_generator(tg.TextGenerator):
+class PoemGenerator(tg.TextGenerator):
     """A subclass of TextGenerator for writing poem-like texts. Very much a work in
     progress, and will be for some time.
 
@@ -36,6 +36,6 @@ class poem_generator(tg.TextGenerator):
 
 if __name__ == "__main__":
     if force_test:
-        tg.main(generator_class=poem_generator, chars=True, count=8, input='/home/patrick/Documents/corpora/poetry/Laurence Hope: Last Poems.txt')
+        tg.main(generator_class=PoemGenerator, chars=True, count=8, input='/home/patrick/Documents/corpora/poetry/Laurence Hope: Last Poems.txt')
     else:
-        tg.main(generator_class=poem_generator, **tg.process_command_line())
+        tg.main(generator_class=PoemGenerator, **tg.process_command_line())
