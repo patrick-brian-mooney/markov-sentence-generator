@@ -110,7 +110,13 @@ v2.0, 20 April 2017
 * Wrote first quick draft of a document describing the programming API to the text generator. It needs updating.
 
 v2.1, 5 May 2017
-----------
+----------------
 * Updated some of the documentation, including the internal documentation to the script itself, which still occasionally referred to `text_generator` as `sentence_generator`. Whoops.
 * Generating strings from a `TextGenerator()` object (i.e., anything that winds up funneling to a call to the object's `__str__()` method) now takes the possibility of unnamed generators into account with a bit more elegance.
 * As a convenience, it's now possible to pass just a path to a file to the `train()` method instead of passing a list with one item.
+
+v2.2, 12 May 2017
+-----------------
+* Incorporating `poetry_generator.py`, which subclasses `TextGenerator` to create (a very simplistic) `PoemGenerator`.
+  * There's still a **lot** of work needed here.
+  * Still, it's a start.
