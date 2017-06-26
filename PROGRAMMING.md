@@ -10,7 +10,7 @@ Overview
 
 <ol>
 <li>Import the module, e.g. with <code>import text_generator as tg</code>.</li>
-<li>Instantiate a <code>TextGenerator<code> object, e.g. with <code>genny = tg.TextGenerator()</code>.
+<li>Instantiate a <code>TextGenerator</code> object, e.g. with <code>genny = tg.TextGenerator()</code>.
   <ol>
     <li>If it's convenient for you, you can pass a name to the generator's creation procedure by doing something like <code>genny = tg.TextGenerator(name="MyTextGenerator")</code>; this does nothing except cause the name to be printed if the generator object itself is passed to a procedure that creates a print representation.</li>
   </ol>
