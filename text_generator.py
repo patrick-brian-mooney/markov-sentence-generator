@@ -290,8 +290,8 @@ def fix_caps(word):
     """
     
     if word.isupper() and word != "I":      # I suspect this doesn't work the way Schwartz thinks it does, but haven't tested it.
-        word = word.lower()
-        # Ex: "LaTeX" => "Latex"
+        word = word.lower()                 # isupper() looks at whether the WHOLE STRING IS CAPITALIZED, not whether it HAS CAPS IN IT.
+        # Ex: "LaTeX" => "Latex"            # So this example doesn't actually describe what's going on.
     elif word[0].isupper():
         word = th.capitalize(word.lower())
         # Ex: "wOOt" -> "woot"
@@ -637,7 +637,7 @@ class TextGenerator(object):
             else:  # Wrap to specified width (unless current terminal width is odd, in which case we're off by 1)
                 padding = max((th.terminal_width() - columns) // 2, 0)
                 log_it("INFO: COLUMNS is %s; padding text with %s spaces on each side" % (columns, padding), 2)
-                log_it("NOTE: terminal width is %s" % th.terminal_width())
+                log_it("NOTE: terminal width is %s" % th.terminal_width(), 2)
             what = th.multi_replace(what, [['\n\n', '\n'], ])       # Last chance to postprocess text is right here
             for the_paragraph in what.split('\n'):
                 if the_paragraph:                   # Skip any empty paragraphs that may pop up
@@ -679,7 +679,7 @@ def main(generator_class=TextGenerator, **kwargs):
     that subclass TextGenerator(), it is also possible to specify the class of the
     text generator that's created. By default, of course, it's just the basic 
     TextGenerator class, but see poetry_generator for a sample of how this can be
-    done. 
+    overriden. 
     """
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         print_html_docs()
