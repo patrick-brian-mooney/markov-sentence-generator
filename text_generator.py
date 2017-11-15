@@ -287,6 +287,9 @@ def fix_caps(word):
     like 
     
         genny.comparison_function = fix_caps
+    
+    should work. Note that this function is NEVER called BY DEFAULT; it's a utility
+    function that's left in place in case anyone else ever wants to use it. 
     """
     
     if word.isupper() and word != "I":      # I suspect this doesn't work the way Schwartz thinks it does, but haven't tested it.
