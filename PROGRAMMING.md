@@ -26,7 +26,7 @@ Overview
   <ol>
     <li>There are other ways to generate text than just printing it to the terminal:
       <ul>
-        <li><code>a_string = genny.gen_html_frag(sentences_desired=8, paragraph_break_probability=0)</code> will generate text wrapped with HTML <code>&lt;p&gt; ... &lt/p&gt;</code> tags (though this option does not cause a complete, formally valid HTML document to be generated).</li>
+        <li><code>a_string = genny.gen_html_frag(sentences_desired=8, paragraph_break_probability=0)</code> will generate text wrapped with HTML <code>&lt;p&gt; ... &lt;/p&gt;</code> tags (though this option does not cause a complete, formally valid HTML document to be generated).</li>
         <li><code>a_string = genny.gen_text(sentences_desired=8, paragraph_break_probability=0.125)</code> will generate some text and store it in <code>a_string</code>.</li>
       </ul>
     </li>
@@ -43,5 +43,7 @@ The `TextGenerator` object is intentionally designed to be easily controllable b
   <dt><code>TextGenerator._printer()</code></dt>
   <dd>A function responsible for printing generated text directly to the console. Override this function to change the details of how text is printed. An overridden version of this function will need to take the same arguments as this function does (or at least consume them, e.g. by =using a <code>*pargs</code>/<code>**kwargs</code> argument-consuming syntax).</dd>
 </dl>
+
+For an example of a simple class that overrides `TextGenerator()` productively, take a look at <code><a rel="me muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator/blob/master/poetry_generator.py">poetry_generator.py</a></code>.
   
 You can (of course!) use `help(tg)` or `dir(tg)` to explore the built-in documentation for the module.
