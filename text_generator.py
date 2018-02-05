@@ -49,7 +49,7 @@ from patrick_logger import log_it
 patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
 
-force_test = False                  # IF we need to fake command-line arguments in an IDE for testing ...
+force_test = False                  # If we need to fake command-line arguments in an IDE for testing ...
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
@@ -356,7 +356,7 @@ class TextGenerator(object):
             if self.name:
                 return '< class %s, named "%s", with Markov length %d >' % (self.__class__, self.name, self.chains.markov_length)
             else:
-                return '< class %s (unnamed instance), with Markov length %d' % (self.__class__, self.chains.markov_length)
+                return '< class %s (unnamed instance), with Markov length %d >' % (self.__class__, self.chains.markov_length)
         else:
             if self.name:
                 return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
@@ -637,7 +637,7 @@ class TextGenerator(object):
             if columns == -1:  # Wrap to best guess for terminal width
                 log_it("INFO: COLUMNS is -1; wrapping text to best-guess column width", 2)
                 padding = 0
-            else:  # Wrap to specified width (unless current terminal width is odd, in which case we're off by 1)
+            else:  # Wrap to specified width (unless current terminal width is odd, in which case we're off by 1. Oh well.)
                 padding = max((th.terminal_width() - columns) // 2, 0)
                 log_it("INFO: COLUMNS is %s; padding text with %s spaces on each side" % (columns, padding), 2)
                 log_it("NOTE: terminal width is %s" % th.terminal_width(), 2)
@@ -682,7 +682,7 @@ def main(generator_class=TextGenerator, **kwargs):
     that subclass TextGenerator(), it is also possible to specify the class of the
     text generator that's created. By default, of course, it's just the basic 
     TextGenerator class, but see poetry_generator for a sample of how this can be
-    overriden. 
+    overridden. 
     """
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         print_html_docs()
