@@ -39,11 +39,13 @@ __date__ = "$Date: 2017/04/24 16:16:00 $"
 __copyright__ = "Copyright (c) 2015-17 Patrick Mooney"
 __license__ = "GPL v3, or, at your option, any later version"
 
-import re, random, sys, pickle, pprint, time, argparse, collections
 
-import text_handling as th          # From  https://github.com/patrick-brian-mooney/personal-library
-import patrick_logger               # From  https://github.com/patrick-brian-mooney/personal-library
+import argparse, collections, pickle, pprint, re, random, sys, time
+
+import text_handling as th          # https://github.com/patrick-brian-mooney/personal-library
+import patrick_logger               # https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
+
 
 # Set up some constants
 patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
@@ -284,14 +286,14 @@ def fix_caps(word):
     """This is Harry Schwartz's token comparison function, allowing words (other than
     "I") to be compared regardless of capitalization. I don't tend to use it, but
     if you want to, set the comparison_form attribute to point to it: something
-    like 
-    
+    like
+
         genny.comparison_function = fix_caps
-    
+
     should work. Note that this function is NEVER called BY DEFAULT; it's a utility
-    function that's left in place in case anyone else ever wants to use it. 
+    function that's left in place in case anyone else ever wants to use it.
     """
-    
+
     if word.isupper() and word != "I":      # I suspect this doesn't work the way Schwartz thinks it does, but haven't tested it.
         word = word.lower()                 # isupper() looks at whether the WHOLE STRING IS CAPITALIZED, not whether it HAS CAPS IN IT.
         # Ex: "LaTeX" => "Latex"            # So this example doesn't actually describe what's going on.
@@ -362,7 +364,7 @@ class TextGenerator(object):
                 return '< class %s, named "%s", UNTRAINED >' % (self.__class__, self.name)
             else:
                 return '< class %s (unnamed instance), UNTRAINED >' % self.__class__
-    
+
     @staticmethod
     def comparison_form(word):
         """This function is called to normalize the words for the purpose of storing
@@ -370,12 +372,12 @@ class TextGenerator(object):
         deciding what the next word in the sequence should be. By default, this
         function performs no processing at all; override it if any preprocessing
         should be done for comparison purposes -- for instance, if case needs to be
-        normalized.  
+        normalized.
         """
         return word
 
     def __init__(self, name=None, training_texts=None, **kwargs):
-        """Create a new instance. NAME is entirely optional, and is mentioned for 
+        """Create a new instance. NAME is entirely optional, and is mentioned for
         convenience (if it exists) any time a string representation is generated.
         If TRAINING_TEXTS is not None, it should be a *list* of one or more
         filenames on which the generator will be immediately trained. If you want
@@ -491,7 +493,7 @@ class TextGenerator(object):
         try:
             while to_hash_key(prevList) not in the_mapping:
                 prevList.pop(0)         # Just drop the earliest list element & try again if the list isn't in the_mapping
-        except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence; 
+        except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence;
             retval = "."    # this will force the generator to start a new one.
         else:               # Otherwise, get a random word from the_mapping, given prevList, if prevList isn't empty
             for k, v in the_mapping[to_hash_key(prevList)].items():
@@ -528,14 +530,22 @@ class TextGenerator(object):
         self.chains.markov_length = markov_length
         self.chains.character_tokens = character_tokens
 
+    @staticmethod
+    def _tokenize_string(the_string):
+        """Split a string into tokens, which more or less correspond to words. More aware
+        than a naive str.split() because it takes punctuation into account to some
+        extent.
+        """
+        return re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_string)
+
     def _token_list(self, the_string, character_tokens=False):
         """Converts a string into a set of tokens so that the text generator can
         process, and therefore be trained by, it.
-        ."""
+        """
         if character_tokens:
             tokens = list(the_string)
         else:
-            tokens = re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_string)
+            tokens = self._tokenize_string(the_string)
         return [self.comparison_form(w) for w in tokens]
 
     def is_trained(self):
@@ -677,12 +687,12 @@ def main(generator_class=TextGenerator, **kwargs):
     the command line would be parsed, i.e. with something like
 
         main(markov_length=2, input=['Song of Solomon.txt'], count=20, chars=True)
-        
+
     To allow this code to be reused to create command-line interfaces in modules
     that subclass TextGenerator(), it is also possible to specify the class of the
-    text generator that's created. By default, of course, it's just the basic 
+    text generator that's created. By default, of course, it's just the basic
     TextGenerator class, but see poetry_generator for a sample of how this can be
-    overridden. 
+    overridden.
     """
     if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
         print_html_docs()
