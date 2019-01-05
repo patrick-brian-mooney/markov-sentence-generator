@@ -12,12 +12,12 @@ v1.1, 29 November 2015
 ----------------------
 * Basic first release, this is alpha software, etc.
 * Refactored Schwartz's program to avoid global variables.
-* Added some (not enough) logging, based on the patrick_logger module.
+* Added some (not enough) logging, based on my own `patrick_logger` module.
 * Wrapped it in a set of routines that allow it meaningfully parse command-line options.
 * Refactored again so that it's also usable as a Python module.
 * Added a more comprehensive usage message.
-* Added ability to store (-o) and load (-l) chains instead of creating them from scratch; this may help when runnng multiple times over the same text(s).
-* Added ability to add multiple texts with -i or --input.
+* Added ability to store (`-o`) and load (`-l`) chains instead of creating them from scratch; this may help when runnng multiple times over the same text(s).
+* Added ability to add multiple texts with `-i` or `--input`.
 
 v1.1, 27 January 2016
 ---------------------
@@ -44,7 +44,7 @@ v1.2, 24 January 2017
 ---------------------
 Coming back to quick documentation of changes here.
 
-`gen_text()` now uses text_handling.multi_replace() to do its substitutions
+`gen_text()` now uses `text_handling.multi_replace()` to do its substitutions
   * this means that they're now regex-based and that they keep getting applied until nothing produces a change.
 
 25 March 2017
@@ -69,7 +69,7 @@ v2.0, 20 April 2017
   * Well, that, and documentation has to be updated, too.
 * This changes the interface to the unit.
   * Everything that depends on the old API will have to be adapted to the new protocol.
-  * The amount of work required to keep the API consistent makes it not worthwhile.
+  * The amount of work required to keep the API consistent makes it not worthwhile. It's easier to adapt other projects to the new calling interface
     * Especially because, to the best of my knowledge, no one other than me is using this module.
 * Still, at this point, it's mature enough to be tested with AutoLovecraft. Which I'm about to do.
 
@@ -120,3 +120,4 @@ v2.2, 12 May 2017
 * Incorporating `poetry_generator.py`, which subclasses `TextGenerator` to create (a very simplistic) `PoemGenerator`.
   * There's still a **lot** of work needed here.
   * Still, it's a start.
+  * Samples of output from the developing poetry generator and scripts that call it are available [here](https://libidomechanica.tumblr.com/).
