@@ -20,7 +20,8 @@ class PoemGenerator(tg.TextGenerator):
     progress, and will be for some time.
 
     This is also a demonstration of how to write a new text generator that
-    subclasses TextGenerator, though at the moment it's not much of one.
+    subclasses TextGenerator, though at the moment it's not a particularly impressive
+    example of one.
     """
 
     def train(self, the_files, markov_length=3, character_tokens=True):

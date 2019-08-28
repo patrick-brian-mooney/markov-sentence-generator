@@ -293,7 +293,6 @@ def fix_caps(word):
     should work. Note that this function is NEVER called BY DEFAULT; it's a utility
     function that's left in place in case anyone else ever wants to use it.
     """
-
     if word.isupper() and word != "I":      # I suspect this doesn't work the way Schwartz thinks it does, but haven't tested it.
         word = word.lower()                 # isupper() looks at whether the WHOLE STRING IS CAPITALIZED, not whether it HAS CAPS IN IT.
         # Ex: "LaTeX" => "Latex"            # So this example doesn't actually describe what's going on.
@@ -620,9 +619,11 @@ class TextGenerator(object):
             the_text = the_text + self._gen_sentence()
             if random.random() <= paragraph_break_probability or which_sentence == sentences_desired - 1:
                 the_text = th.multi_replace(the_text, self.final_substitutions)
-                yield the_text.strip() + "\n"
+                try:
+                    yield the_text.strip() + "\n"
+                except RuntimeError:                    # Conforms to Python 3.7 changes in behavior. Sigh.
+                    return
                 the_text = ""
-        raise StopIteration
 
     def gen_text(self, sentences_desired=1, paragraph_break_probability=0.25):
         """Generate the full amount of text required. This is just a convenience wrapper
