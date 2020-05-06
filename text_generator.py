@@ -9,19 +9,24 @@ any later version. See the files README.md and LICENSE.md for more details.
 """
 
 
-import argparse, collections, pickle, pprint, re, random, sys, time
+import pickle, re, random, time, typing
+
+from pathlib import Path
 
 import text_handling as th          # https://github.com/patrick-brian-mooney/personal-library
 import patrick_logger               # https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
-from text_generator import *
+
+__author__ = "Patrick Mooney, http://patrickbrianmooney.nfshost.com/~patrick/"
+__version__ = "$v2.3 $"
+__date__ = "$Date: 2020/05/05 23:16:00 $"
+__copyright__ = "Copyright (c) 2015-20 Patrick Mooney"
+__license__ = "GPL v3, or, at your option, any later version"
 
 
 patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
-
-force_test = True                  # If we need to fake command-line arguments in an IDE for testing ...
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
@@ -30,10 +35,10 @@ punct_with_no_space_after = r'—-/․'             # Note: that last character 
 word_punct = r"'’❲❳%°#․$"                       # Punctuation marks to be considered part of a word.
 token_punct = r".,:\-!?;—/&…⸻"                # These punctuation marks also count as tokens.
 
-def process_acronyms(text):
+def process_acronyms(text: str) -> str:
     """Takes TEXT and looks through it for acronyms. If it finds any, it takes each
     and converts their periods to one-dot leaders to make the Markov parser treat
-    the acronym as a single word.
+    the acronym as a single word. Returns the modified string.
 
     This function is NEVER called directly by any other routine in this file;
     it's a convenience function for code that uses this module. This may change
@@ -73,14 +78,17 @@ def process_acronyms(text):
     return ret
 
 
-def to_hash_key(lst):
+def to_hash_key(lst: list) -> tuple:
     """Tuples can be hashed; lists can't.  We need hashable values for dict keys.
     This looks like a hack (and it is, a little) but in practice it doesn't
     affect processing time too negatively.
+
+    This is no longer used -- tuple() is now called directly to spare a function
+    call -- but it's been allowed to stay here because of historical affection.
     """
     return tuple(lst)
 
-def apply_defaults(defaultargs, args):
+def apply_defaults(defaultargs: dict, args: dict) -> dict:
     """Takes two dictionaries, ARGS and DEFAULTARGS, on the assumption that these are
     argument dictionaries for the **kwargs call syntax. Returns a new dictionary that
     consists of the elements of ARGS, plus those elements of DEFAULTARGS whose key
@@ -93,7 +101,7 @@ def apply_defaults(defaultargs, args):
     ret.update(args)
     return ret
 
-def fix_caps(word):
+def fix_caps(word: str) -> str:
     """This is Harry Schwartz's token comparison function, allowing words (other than
     "I") to be compared regardless of capitalization. I don't tend to use it, but
     if you want to, set the comparison_form attribute to point to it: something
@@ -124,7 +132,7 @@ class MarkovChainTextModel(object):
         self.the_mapping = None         # Dictionary representing the Markov chains.
         self.character_tokens = False   # True if the chains are characters, False if they are words.
 
-    def store_chains(self, filename):
+    def store_chains(self, filename: typing.Union[str, Path]):
         """Shove the relevant chain-based data into a dictionary, then pickle it and
         store it in the designated file.
         """
@@ -141,7 +149,7 @@ class MarkovChainTextModel(object):
         except pickle.PickleError as e:
             log_it("ERROR: Can't write chains to %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0)
 
-    def read_chains(self, filename):
+    def read_chains(self, filename: typing.Union[str, Path]):
         """Read the pickled chain-based data from FILENAME."""
         default_chains = { 'character_tokens': False,       # We need only assign defaults for keys added in v2.0 and later.
                           }                                 # the_starts, the_mapping, and markov_length have been around since 1.0.
@@ -176,7 +184,7 @@ class TextGenerator(object):
                 return '< class %s (unnamed instance), UNTRAINED >' % self.__class__
 
     @staticmethod
-    def comparison_form(word):
+    def comparison_form(word: str) -> str:
         """This function is called to normalize the words for the purpose of storing
         them in the list of Markov chains, and for looking at previous words when
         deciding what the next word in the sequence should be. By default, this
@@ -186,7 +194,7 @@ class TextGenerator(object):
         """
         return word
 
-    def __init__(self, name=None, training_texts=None, **kwargs):
+    def __init__(self, name: typing.Optional[str]=None, training_texts: typing.Optional[list]=None, **kwargs):
         """Create a new instance. NAME is entirely optional, and is mentioned for
         convenience (if it exists) any time a string representation is generated.
         If TRAINING_TEXTS is not None, it should be a *list* of one or more
@@ -228,7 +236,7 @@ class TextGenerator(object):
         if training_texts:
             self.train(training_texts, **kwargs)
 
-    def add_final_substitution(self, substitution, position=-1):
+    def add_final_substitution(self, substitution: str, position: int=-1):
         """Add another substitution to the list of substitutions performed after text is
         generated. Since the final substitutions are performed in the order they're
         listed, position matters; the POSITION parameter indicates what position in the
@@ -240,7 +248,7 @@ class TextGenerator(object):
         if position == -1: position = len(self.final_substitutions)
         self.final_substitutions.insert(position, substitution)
 
-    def remove_final_substitution(self, substitution):
+    def remove_final_substitution(self, substitution: str):
         """Remove SUBSTITUTION from the list of final substitutions performed after text
         is generated. You must pass in *exactly* the substitution you want to remove.
         If you try to remove something that's not there, this routine will let the error
@@ -251,14 +259,14 @@ class TextGenerator(object):
         assert len(substitution) == 2, "ERROR: the substitution you pass in must be two items long."
         self.final_substitutions.remove(substitution)
 
-    def get_final_substitutions(self):
+    def get_final_substitutions(self) -> typing.List[str]:          #FIXME: check annotation
         """Returns the list of final substitutions that are performed by the text generator
         before returning the text. Just a quick index into a variable in the object
         namespace.
         """
         return self.final_substitutions
 
-    def set_final_substitutions(self, substitutions):
+    def set_final_substitutions(self, substitutions: typing.List[str]):     # FIXME: check annotation
         """Set the list of final substitutions that are performed on generated text before
         it's returned. SUBSTITUTIONS must be a list of two-item lists, of the form
         [regex to search for, replacement], as in the default list in the __init__()
@@ -270,7 +278,9 @@ class TextGenerator(object):
         self.final_substitutions = substitutions
 
     @staticmethod
-    def addItemToTempMapping(history, word, the_temp_mapping):
+    def addItemToTempMapping(history: typing.List[str],             #FIXME: check annotations
+                             word: str,
+                             the_temp_mapping: typing.Dict[tuple, str]) -> None:
         """Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
         the_temp_mapping (and the_mapping) both match each word to a list of possible next
         words.
@@ -279,7 +289,7 @@ class TextGenerator(object):
         the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
         """
         while len(history) > 0:
-            first = to_hash_key(history)
+            first = tuple(history)
             if first in the_temp_mapping:
                 if word in the_temp_mapping[first]:
                     the_temp_mapping[first][word] += 1.0
@@ -290,7 +300,8 @@ class TextGenerator(object):
                 the_temp_mapping[first][word] = 1.0
             history = history[1:]
 
-    def next(self, prevList, the_mapping):
+    def next(self, prevList: typing.List,                           #FIXME: check annotations
+             the_mapping: typing.Dict) -> str:
         """Returns the next word in the sentence (chosen randomly),
         given the previous ones.
         """
@@ -300,19 +311,21 @@ class TextGenerator(object):
         index = random.random()
         # Shorten prevList until it's in the_mapping
         try:
-            while to_hash_key(prevList) not in the_mapping:
+            while tuple(prevList) not in the_mapping:
                 prevList.pop(0)         # Just drop the earliest list element & try again if the list isn't in the_mapping
         except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence;
             retval = "."    # this will force the generator to start a new one.
         else:               # Otherwise, get a random word from the_mapping, given prevList, if prevList isn't empty
-            for k, v in the_mapping[to_hash_key(prevList)].items():
+            for k, v in the_mapping[tuple(prevList)].items():
                 sum += v
                 if sum >= index and retval == "":
                     retval = k
                     break
         return retval
 
-    def _build_mapping(self, token_list, markov_length, character_tokens=False):
+    def _build_mapping(self, token_list: typing.List[str],          #FIXME: check annotations
+                       markov_length: int,
+                       character_tokens: bool=False):
         """Create the actual Markov chain-based training data for the model, based on an
         ordered list of tokens passed in.
         """
@@ -340,14 +353,15 @@ class TextGenerator(object):
         self.chains.character_tokens = character_tokens
 
     @staticmethod
-    def _tokenize_string(the_string):
+    def _tokenize_string(the_string: str) -> str:
         """Split a string into tokens, which more or less correspond to words. More aware
         than a naive str.split() because it takes punctuation into account to some
         extent.
         """
         return re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_string)
 
-    def _token_list(self, the_string, character_tokens=False):
+    def _token_list(self, the_string: str,                                  #FIXME: check annotations
+                    character_tokens: bool=False) -> typing.List[str]:
         """Converts a string into a set of tokens so that the text generator can
         process, and therefore be trained by, it.
         """
@@ -357,20 +371,24 @@ class TextGenerator(object):
             tokens = self._tokenize_string(the_string)
         return [self.comparison_form(w) for w in tokens]
 
-    def is_trained(self):
+    def is_trained(self) -> bool:
         """Detect whether this model is trained or not."""
         return (self.chains.the_starts and self.chains.the_mapping and self.chains.markov_length)
 
-    def _train_from_text(self, the_text, markov_length=1, character_tokens=False):
+    def _train_from_text(self, the_text: str,
+                         markov_length: int=1,
+                         character_tokens: bool=False):
         """Train the model by getting it to analyze a text passed in."""
         self._build_mapping(self._token_list(the_text, character_tokens=character_tokens),
                             markov_length=markov_length, character_tokens=character_tokens)
 
-    def train(self, the_files, markov_length=1, character_tokens=False):
+    def train(self, the_files: typing.Union[str, bytes, Path, typing.List],
+              markov_length: int=1,
+              character_tokens: bool=False):
         """Train the model from a text file, or a list of text files supplied,
          as THE_FILES.
          """
-        if isinstance(the_files, (str, bytes)): the_files = [ the_files ]
+        if isinstance(the_files, (str, bytes, Path)): the_files = [ the_files ]
         assert isinstance(the_files, (list, tuple)), "ERROR: you cannot pass an object of type %s to %s.train" % (type(the_files), self)
         assert len(the_files) > 0, "ERROR: empty file list passed to %s.train()" % self
         the_text = ""
@@ -379,7 +397,7 @@ class TextGenerator(object):
                 the_text = the_text + '\n' + the_file.read()
         self._train_from_text(the_text=the_text, markov_length=markov_length, character_tokens=character_tokens)
 
-    def _gen_sentence(self):
+    def _gen_sentence(self) -> str:
         """Build a sentence, starting with a random 'starting word.' Returns a string,
         which is the generated sentence.
         """
@@ -410,7 +428,8 @@ class TextGenerator(object):
                     sent = self._gen_sentence()    # Retry, recursively.
         return th.capitalize(sent)
 
-    def _produce_text(self, sentences_desired=1, paragraph_break_probability=0.25):
+    def _produce_text(self, sentences_desired: int=1,
+                      paragraph_break_probability: float=0.25) -> str:
         """Actually generate some text. This is a generator function that produces (yields)
         one paragraph at a time. If you just need all the text at once, you might want
         to use the convenience wrapper gen_text() instead.
@@ -435,21 +454,24 @@ class TextGenerator(object):
                     return
                 the_text = ""
 
-    def gen_text(self, sentences_desired=1, paragraph_break_probability=0.25):
+    def gen_text(self, sentences_desired: int=1,
+                 paragraph_break_probability: float=0.25) -> str:
         """Generate the full amount of text required. This is just a convenience wrapper
         for _produce_text().
         """
         return '\n'.join(self._produce_text(sentences_desired, paragraph_break_probability))
 
-    def gen_html_frag(self, sentences_desired=1, paragraph_break_probability=0.25):
+    def gen_html_frag(self, sentences_desired: int=1,
+                      paragraph_break_probability: float=0.25):
         """Produce the same text that _produce_text would, but wrapped in HTML <p></p> tags."""
         log_it("We're generating an HTML fragment.", 3)
         the_text = self._produce_text(sentences_desired, paragraph_break_probability)
         return '\n\n'.join(['<p>%s</p>' % p.strip() for p in the_text])
 
-    def _printer(self, what, columns=-1):
+    def _printer(self, what: str,
+                 columns: int=-1):
         """Print WHAT in an appropriate way, wrapping to the specified number of
-        COLUMNS. Override this function to change its behavior.
+        COLUMNS. If COLUMNS is -1, take a whack at guessing what it should be.
         """
         if columns == 0:  # Wrapping is totally disabled. Print exactly as generated.
             log_it("INFO: COLUMNS is zero; not wrapping text at all", 2)
@@ -468,7 +490,10 @@ class TextGenerator(object):
                     th.print_indented(the_paragraph, each_side=padding)
                     print()
 
-    def print_text(self, sentences_desired, paragraph_break_probability=0.25, pause=0, columns=-1):
+    def print_text(self, sentences_desired: int,
+                   paragraph_break_probability: float=0.25,
+                   pause: float=0,
+                   columns: int=-1):
         """Prints generated text directly to stdout."""
         for t in self._produce_text(sentences_desired, paragraph_break_probability):
             time_now = time.time()

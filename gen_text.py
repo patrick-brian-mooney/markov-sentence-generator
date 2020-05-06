@@ -35,23 +35,18 @@ might be something like:
 
 """ % ((sys.argv[0],) * 2)
 
-__author__ = "Patrick Mooney, http://patrickbrianmooney.nfshost.com/~patrick/"
-__version__ = "$v2.3 $"
-__date__ = "$Date: 2020/05/05 23:16:00 $"
-__copyright__ = "Copyright (c) 2015-20 Patrick Mooney"
-__license__ = "GPL v3, or, at your option, any later version"
 
 
-import argparse, collections, pickle, pprint, re, random, sys, time
+import argparse, pprint, sys
 
-import text_handling as th          # https://github.com/patrick-brian-mooney/personal-library
 import patrick_logger               # https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
 from text_generator import *
 
 
-# Set up some constants
+force_test = False                      # If we need to fake command-line arguments in an IDE for testing ...
+
 
 def print_usage():
     """Print a usage message to the terminal."""
