@@ -1,43 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.5
 # -*- coding: utf-8 -*-
+"""This is the actual code implementing the Patrick Mooney's Markov chain-based
+text generator, separated into a separate module so that it can easily be
+compiled with Cython.
 
-"""This is Patrick Mooney's Markov sentence generator. It is licensed under the
-GNU GPL,either version 3, or (at your option) any later version. See the files
-README.md and LICENSE.md for more details.
-
-Find it at https://github.com/patrick-brian-mooney/markov-sentence-generator.
-
-USAGE:
-
-  ./text_generator.py [options] -i FILENAME [-i FILENAME ] | -l FILENAME
-
-text_generator.py needs existing text to use as the basis for the text that
-it generates. You must either use -l to specify a file containing compiled
-probability data, saved with -o on a previous run, or else must specify at
-least one plain-text file (with -i or --input) for this purpose.
-
-For the full list of options, run
-
-  ./text_generator.py --help
-
-in a terminal.
-
-It can also be imported by a Python 3 script. A typical, fairly simple use
-might be something like:
-
-  #!/usr/bin/env python3
-  import text_generator as tg
-  genny = tg.TextGenerator()
-  genny.train('/path/to/a/text/file', markov_length=3)
-  genny.print_text(sentences_desired=8)
-
+This module is licensed under the GNU GPL,either version 3, or (at your option)
+any later version. See the files README.md and LICENSE.md for more details.
 """
-
-__author__ = "Patrick Mooney, http://patrickbrianmooney.nfshost.com/~patrick/"
-__version__ = "$v2.2 $"
-__date__ = "$Date: 2017/04/24 16:16:00 $"
-__copyright__ = "Copyright (c) 2015-17 Patrick Mooney"
-__license__ = "GPL v3, or, at your option, any later version"
 
 
 import argparse, collections, pickle, pprint, re, random, sys, time
@@ -46,12 +15,13 @@ import text_handling as th          # https://github.com/patrick-brian-mooney/pe
 import patrick_logger               # https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
+from text_generator import *
 
-# Set up some constants
+
 patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
                                     # "are we running on a webserver?" check.
 
-force_test = False                  # If we need to fake command-line arguments in an IDE for testing ...
+force_test = True                  # If we need to fake command-line arguments in an IDE for testing ...
 
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
@@ -59,27 +29,6 @@ punct_with_no_space_before = r'.,!?;—․-:/'
 punct_with_no_space_after = r'—-/․'             # Note: that last character is U+2024, "one-dot leader".
 word_punct = r"'’❲❳%°#․$"                       # Punctuation marks to be considered part of a word.
 token_punct = r".,:\-!?;—/&…⸻"                # These punctuation marks also count as tokens.
-
-
-def print_usage():
-    """Print a usage message to the terminal."""
-    patrick_logger.log_it("INFO: print_usage() was called", 2)
-    print('\n\n')
-    print(__doc__ % __version__.strip('$').strip())
-
-def print_html_docs():
-    print('Content-type: text/html\n\n')                                # ... print HTTP headers, then documentation.
-    print("""<!doctype html><html>
-<head><title>Patrick Mooney's Markov chain–based text generator</title>
-<link rel="profile" href="http://gmpg.org/xfn/11" /></head>
-<body>
-<h1>Patrick Mooney's Markov chain–based text generator</h1>
-<p>Code is available <a rel="muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator">here</a>.</p>
-<pre>%s</pre>
-</body>
-</html>""" % __doc__)
-    sys.exit(0)
-
 
 def process_acronyms(text):
     """Takes TEXT and looks through it for acronyms. If it finds any, it takes each
@@ -124,144 +73,6 @@ def process_acronyms(text):
     return ret
 
 
-def process_command_line():
-    """Parse the command line; return a dictionary of selected options, accounting
-    for defaults.
-    """
-
-    help_epilogue = """OPTIONS
-
--m N, --markov-length N
-    Length (in words; or, if -r is in effect, in characters) of the Markov
-    chains used by the program. Longer chains generate text "more like the
-    original text" in many ways, (often) including perceived grammatical
-    correctness; but using longer chains also means that the sentences generated
-    "are less random," take longer to generate and work with, and take more
-    memory (and disk space) to store. Optimal values depend on the source text
-    and its characteristics, but you might reasonably experiment with numbers
-    from 1 to 4 to see what you get. Larger numbers will increasingly result in
-    the script just coughing up whole sentences from the original source texts,
-    which may or may not be what you want. The default Markov chain length, if
-    not overridden with this parameter, is one.
-
--i FILE, --input FILE
-    Specify an input file to use as the basis of the generated text. You can
-    specify this parameter more than once; all of the files specified will be
-    treated as if they were one long file containing all of the text in all of
-    the input files.
-
--o FILE, --output FILE
-    Specify a file into which the generated probability data (the "chains")
-    should be saved. If you're going to be using the same data repeatedly,
-    saving the data with -o and then re-loading it with the -l option is faster
-    than re-generating the data on every run by specifying the same input files
-    with -i. However, the generated chains saved with -o are notably larger than
-    the source files.
-
--l FILE, --load FILE
-    Load probability data ("chains") that was generated a previous run and
-    saved with -o or --output.  Loading the data this way is faster than
-    re-generating it, so if you're going to be using the same data a lot, you
-    can save time by generating the data only once, then re-loading it this way
-    on subsequent runs.
-
--c N, --count N
-    Specify how many sentences the script should generate. (If unspecified, the
-    default number of sentences to generate is one.)
-
--r, --chars
-    By default, the individual tokens in the chains generated by this program
-    are whole words; chances are that this is what most people using a Markov
-    chain-based text generator want most of the time, anyway. However, if you
-    specify -h or --chars, the tokens in the generated Markov chains will be
-    individual characters, rather than words, and these individual characters
-    will be recombined to form random words (and, thereby, random sentences),
-    instead of whole words being recombined to form random sentences. Doing this
-    will certainly increase the degree to which the generated text seems
-    "gibberishy," especially if you don't also bump up the chain length with -m
-    or --markov-length.
-
--w N, --columns N
-    Wrap the output to N columns. If N is -1 (or not specified), the sentence
-    generator does its best to wrap to the width of the current terminal. If N
-    is 0, no wrapping at all is performed: words may be split between lines.
-
--p N, --pause N
-    Pause approximately NUM seconds after each paragraph is printed. The actual
-    pause may not be quite exactly NUM seconds, though the program tries to get
-    this right to the greatest extent possible.
-
---html
-    Wrap paragraphs of text output by the program with HTML paragraph tags. This
-    does NOT generate a complete, formally valid HTML document (which would
-    involve generating a heading and title, among other things), but rather
-    generates an HTML fragment that you can insert into another HTML document,
-    as you wish.
-
--v, --verbose
-    Increase the verbosity of the script, i.e. get more output. Can be specified
-    multiple times to make the script more and more verbose. Current verbosity
-    levels are subject to change in future versions of the script.
-
--q, --quiet
-    Decrease the verbosity of the script. You can mix -v and -q, but really,
-    don't you have better things to do with your life?
-
-
-NOTES AND CAVEATS
-
-Some options are incompatible with each other. Caveats for long options also
-apply to the short versions of the same options.
-
-  --input   ONLY understands PLAIN TEXT files. (Not HTML. Not markdown. Not MS
-            Word. Not mailbox files. Not RTF. Just plain text.) Trying to feed
-            it anything else will either fail or produce unpredictable results.
-
-  --load    is quite convenient for multiple runs with the same data, but
-            prevents changing the basic parameters for the model, because the
-            encoded chains don't retain all of the data that was used to create
-            them. If you're re-loading compiled data with this option, you cannot
-            also use any of the following options:
-
-            -m/--markov-length
-            -i/--input
-            -r/--chars (nor can you turn it off if the previously generated
-                        chains were generated with it)
-
-  --html    cannot be used with --columns/-w. (Rendered HTML ignores newlines
-            anyway, so combining these two options will rarely or never make
-            sense.)
-
-            It also cannot be used with -p/--pause, because HTML output is not
-            intended to be printed directly to the terminal; and there's rarely
-            any point in artificially slowing down content production intended
-            for a web server, is there?
-
-  --output  does NOT specify an output file into which the generated text is
-            saved. To do that, use shell redirection, e.g. by doing something
-            like:
-
-                ./text_generator -i somefile.txt > outputfile.txt
-
-This program is licensed under the GPL v3 or, at your option, any later version.
-See the file LICENSE.md for details.
-
-"""
-    parser = argparse.ArgumentParser(description="This program generates random (but often intelligible) text based on a frequency\nanalysis of one or more existing texts. It is based on Harry R. Schwartz's\nMarkov sentence generator, but is intended to be more flexible for use in my own\nvarious text-generation projects.", epilog=help_epilogue, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-m', '--markov-length', type=int, default="1")
-    parser.add_argument('-i', '--input', action="append")
-    parser.add_argument('-o', '--output')
-    parser.add_argument('-l', '--load')
-    parser.add_argument('-c', '--count', type=int, default="1")
-    parser.add_argument('-r', '--chars', action='store_true')
-    parser.add_argument('-w', '--columns', type=int, default="-1")
-    parser.add_argument('-p', '--pause', type=int, default="0")
-    parser.add_argument('--html', action='store_true')
-    parser.add_argument('-v', '--verbose', action='count', default=0)
-    parser.add_argument('-q', '--quiet', action='count', default=0)
-    parser.add_argument('--version', action='version', version='text_generator.py %s' % __version__.strip('$').strip())
-    return vars(parser.parse_args())
-
 def to_hash_key(lst):
     """Tuples can be hashed; lists can't.  We need hashable values for dict keys.
     This looks like a hack (and it is, a little) but in practice it doesn't
@@ -297,7 +108,7 @@ def fix_caps(word):
         word = word.lower()                 # isupper() looks at whether the WHOLE STRING IS CAPITALIZED, not whether it HAS CAPS IN IT.
         # Ex: "LaTeX" => "Latex"            # So this example doesn't actually describe what's going on.
     elif word[0].isupper():
-        word = th.capitalize(word.lower())
+        word = th.capitalize(word.lower())  # I keep meaning to report this as a bug. #FIXME
         # Ex: "wOOt" -> "woot"
     else:
         word = word.lower()
@@ -416,7 +227,6 @@ class TextGenerator(object):
         ]
         if training_texts:
             self.train(training_texts, **kwargs)
-
 
     def add_final_substitution(self, substitution, position=-1):
         """Add another substitution to the list of substitutions performed after text is
@@ -666,84 +476,3 @@ class TextGenerator(object):
             time.sleep(max(pause - (time.time() - time_now), 0))    # Pause until it's time for a new paragraph.
 
 
-default_args = {'chars': False,
-                'columns': -1,
-                'count': 1,
-                'html': False,
-                'input': [],
-                'load': None,
-                'markov_length': 1,
-                'output': None,
-                'pause': 0,
-                'quiet': 0,
-                'verbose': 0}
-
-def main(generator_class=TextGenerator, **kwargs):
-    """Handle the main program loop and generate some text.
-
-    By default, this routine can simply be called as main(), with no arguments; this
-    is what happens when the script is called from the command line. In this case,
-    it parses the arguments passed on the command line. However, for testing
-    purposes, it can also be called with keyword arguments in the same format that
-    the command line would be parsed, i.e. with something like
-
-        main(markov_length=2, input=['Song of Solomon.txt'], count=20, chars=True)
-
-    To allow this code to be reused to create command-line interfaces in modules
-    that subclass TextGenerator(), it is also possible to specify the class of the
-    text generator that's created. By default, of course, it's just the basic
-    TextGenerator class, but see poetry_generator for a sample of how this can be
-    overridden.
-    """
-    if (not sys.stdout.isatty()) and (patrick_logger.verbosity_level < 1):  # Assume we're running on a web server. ...
-        print_html_docs()
-
-    if len(kwargs):     # If keyword arguments are passed in, trust them to be the options.
-        opts = apply_defaults(defaultargs=default_args, args=kwargs)
-    else:               # Otherwise, parse the command line.
-        opts = process_command_line()
-
-    # OK, check the parameters for inconsistencies.
-    if not opts['load'] and not opts['input']:
-        log_it('ERROR: You must specify input data using either -i/--input or -l/--load.')
-        sys.exit(2)
-    if opts['load']:
-        if opts['input']:
-            log_it('ERROR: You cannot both use --input/-i and --load/-l. Use one or the other.')
-            sys.exit(2)
-        if opts['markov_length'] > 1:
-            log_it('ERROR: You cannot specify a Markov chain length if you load previously compiled chains with -l/--load.')
-            sys.exit(2)
-    if opts['html']:
-        if opts['pause'] or opts['columns'] > 0:
-            log_it('ERROR: Specifying --html is not compatible with using a --pause/-p value or specifying a column width.')
-            sys.exit(2)
-
-    # Now set up logging parameters
-    log_it('INFO: Command-line options parsed; parameters are: %s' % pprint.pformat(opts), 2)
-    patrick_logger.verbosity_level = opts['verbose'] - opts['quiet']
-    log_it('DEBUGGING: verbosity_level after parsing command line is %d.' % patrick_logger.verbosity_level, 2)
-
-    # Now instantiate and train the model, and save the compiled chains, if that's what the user wants
-    print()                     # Cough up a blank line at the beginning.
-    genny = generator_class()
-    if opts['load']:
-        genny.chains.read_chains(filename=opts['load'])
-    else:
-        genny.train(the_files=opts['input'], markov_length=opts['markov_length'], character_tokens=opts['chars'])
-    if opts['output']:
-        genny.chains.store_chains(filename=opts['output'])
-
-    # And generate some text.
-    if opts['html']:
-        the_text = genny.gen_html_frag(sentences_desired=opts['count'])
-        print(the_text)
-    else:
-        genny.print_text(sentences_desired=opts['count'], pause=opts['pause'], columns=opts['columns'])
-
-
-if __name__ == "__main__":
-    if force_test:
-        main(count=20, load='/lovecraft/corpora/previous/Beyond the Wall of Sleep.2.pkl', html=False, pause=1)
-    else:
-        main()
