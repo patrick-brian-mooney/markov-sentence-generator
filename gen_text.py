@@ -3,9 +3,9 @@
 
 import sys
 
-__doc__ = """This is Patrick Mooney's Markov sentence generator. It is licensed under the
-GNU GPL,either version 3, or (at your option) any later version. See the files
-README.md and LICENSE.md for more details.
+__doc__ = """This is Patrick Mooney's Markov sentence generator, version 2.3. It
+is licensed under the GNU GPL,either version 3, or (at your option) any later
+version. See the files README.md and LICENSE.md for more details.
 
 Find it at https://github.com/patrick-brian-mooney/markov-sentence-generator.
 

@@ -47,3 +47,13 @@ The `TextGenerator` object is intentionally designed to be easily controllable b
 For an example of a simple class that overrides `TextGenerator()` productively, take a look at <code><a rel="me muse" href="https://github.com/patrick-brian-mooney/markov-sentence-generator/blob/master/poetry_generator.py">poetry_generator.py</a></code>.
   
 You can (of course!) use `help(tg)` or `dir(tg)` to explore the built-in documentation for the module.
+
+
+Using with Cython
+-----------------
+
+`text_generator.py` and `poetry_generator.py` get a big performance boost when compiled with <a rel="muse" href="http://cython.org">Cython</a>, and improving performance with Cython is a long-term goal of this project. My own projects tend to use Cython-compiled versions of the text generators to save time and memory, in any case.
+
+Once Cython and a C compiler are set up, `setup_tg.py` and `setup_pg.py` can be used to compile faster versions of the modules as static, compiled libraries using, for instance,
+
+    python3 setup_tg.py build_ext --inplace

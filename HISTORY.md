@@ -121,3 +121,7 @@ v2.2, 12 May 2017
   * There's still a **lot** of work needed here.
   * Still, it's a start.
   * Samples of output from the developing poetry generator and scripts that call it are available [here](https://libidomechanica.tumblr.com/).
+
+v2.3, 6 May 2020
+----------------
+* Refactoring a bit, and setting up Cython builds of the generators.
