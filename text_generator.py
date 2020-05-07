@@ -9,13 +9,24 @@ any later version. See the files README.md and LICENSE.md for more details.
 """
 
 
-import pickle, re, random, time, typing
+import pickle
+import re
+import random
+import time
+import typing
 
 from pathlib import Path
 
 import text_handling as th          # https://github.com/patrick-brian-mooney/personal-library
 import patrick_logger               # https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
+
+cython = None
+
+try:
+    import cython
+except Exception as errrr:
+    print("Unable to import cython! The system said: {}".format(errrr))
 
 
 __author__ = "Patrick Mooney, http://patrickbrianmooney.nfshost.com/~patrick/"
@@ -34,6 +45,15 @@ punct_with_no_space_before = r'.,!?;—․-:/'
 punct_with_no_space_after = r'—-/․'             # Note: that last character is U+2024, "one-dot leader".
 word_punct = r"'’❲❳%°#․$"                       # Punctuation marks to be considered part of a word.
 token_punct = r".,:\-!?;—/&…⸻"                # These punctuation marks also count as tokens.
+
+
+# First, some utility functions.
+def _is_cythonized() -> bool:
+    if cython:
+        return cython.compiled
+    else:
+        return False
+
 
 def process_acronyms(text: str) -> str:
     """Takes TEXT and looks through it for acronyms. If it finds any, it takes each
@@ -171,6 +191,49 @@ class TextGenerator(object):
     """A general-purpose text generator. To use it, instantiate it, train it, and
     then have it generate text.
     """
+    def __init__(self, name: typing.Optional[str]=None, training_texts: typing.Optional[list]=None, **kwargs):
+        """Create a new instance. NAME is entirely optional, and is mentioned for
+        convenience (if it exists) any time a string representation is generated.
+        If TRAINING_TEXTS is not None, it should be a *list* of one or more
+        filenames on which the generator will be immediately trained. If you want
+        to specify parameters to train() other than just a list of files (e.g., if
+        you want to pass a markov_length parameter so that the chains have a length
+        greater than one), you can pass them as keyword arguments here, at the end
+        of the parameter list; anything not collected by the keyword arguments
+        explicitly specified in this function's definition will be passed on to
+        train(). (Or, you can instead call train() separately after object
+        creation, if you wish.)
+        """
+        self.name = name                                # NAME is totally optional and entirely for your benefit.
+        self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
+        self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences?
+
+        # This next is the default list of substitutions that happen after text is produced.
+        # List of lists. each sublist:[search_regex, replace_regex]. Subs performed in order specified.
+        if training_texts:
+            self.train(training_texts, **kwargs)
+
+    final_substitutions = [
+        ['--', '—'],
+        ['\.\.\.', '…'],
+        ['․', '.'],  # replace one-dot leader with period
+        ['\.\.', '.'],
+        [" ' ", ''],
+        ['――', '―'],  # Two horizontal bars to one horizontal bar
+        ['―-', '―'],  # Horizontal bar-hyphen to single horizontal bar
+        [':—', ': '],
+        ["\n' ", '\n'],  # newline--single quote--space
+        ["<p>'", '<p>'],
+        ["<p> ", '<p>'],  # <p>-space to <p> (without space)
+        ["<p></p>", ''],  # <p></p> to nothing
+        ['- ', '-'],  # hyphen-space to hyphen
+        ['—-', '—'],  # em dash-hyphen to em dash
+        ['——', '—'],  # two em dashes to one em dash
+        ['([0-9]),\s([0-9])', r'\1,\2'],  # Remove spaces after commas when commas are between numbers.
+        ['([0-9]):\s([0-9])', r'\1:\2'],  # Remove spaces after colons when colons are between numbers.
+        ['…—', '… —'],  # put space in between ellipsis-em dash, if they occur together.
+    ]
+
     def __str__(self):
         if self.is_trained():
             if self.name:
@@ -193,48 +256,6 @@ class TextGenerator(object):
         normalized.
         """
         return word
-
-    def __init__(self, name: typing.Optional[str]=None, training_texts: typing.Optional[list]=None, **kwargs):
-        """Create a new instance. NAME is entirely optional, and is mentioned for
-        convenience (if it exists) any time a string representation is generated.
-        If TRAINING_TEXTS is not None, it should be a *list* of one or more
-        filenames on which the generator will be immediately trained. If you want
-        to specify parameters to train() other than just a list of files (e.g., if
-        you want to pass a markov_length parameter so that the chains have a length
-        greater than one), you can pass them as keyword arguments here, at the end
-        of the parameter list; anything not collected by the keyword arguments
-        explicitly specified in this function's definition will be passed on to
-        train(). (Or, you can instead call train() separately after object
-        creation, if you wish.)
-        """
-        self.name = name                                # NAME is totally optional and entirely for your benefit.
-        self.chains = MarkovChainTextModel()            # Markov chain-based representation of the text(s) used to train this generator.
-        self.allow_single_character_sentences = False   # Is this model allowed to produce one-character sentences?
-
-        # This next is the default list of substitutions that happen after text is produced.
-        # List of lists. each sublist:[search_regex, replace_regex]. Subs performed in order specified.
-        self.final_substitutions = [
-            ['--', '—'],
-            ['\.\.\.', '…'],
-            ['․', '.'],                         # replace one-dot leader with period
-            ['\.\.', '.'],
-            [" ' ", ''],
-            ['――', '―'],                        # Two horizontal bars to one horizontal bar
-            ['―-', '―'],                        # Horizontal bar-hyphen to single horizontal bar
-            [':—', ': '],
-            ["\n' ", '\n'],                     # newline--single quote--space
-            ["<p>'", '<p>'],
-            ["<p> ", '<p>'],                    # <p>-space to <p> (without space)
-            ["<p></p>", ''],                    # <p></p> to nothing
-            ['- ', '-'],                        # hyphen-space to hyphen
-            ['—-', '—'],                        # em dash-hyphen to em dash
-            ['——', '—'],                        # two em dashes to one em dash
-            ['([0-9]),\s([0-9])', r'\1,\2'],    # Remove spaces after commas when commas are between numbers.
-            ['([0-9]):\s([0-9])', r'\1:\2'],    # Remove spaces after colons when colons are between numbers.
-            ['…—', '… —'],                      # put space in between ellipsis-em dash, if they occur together.
-        ]
-        if training_texts:
-            self.train(training_texts, **kwargs)
 
     def add_final_substitution(self, substitution: str, position: int=-1):
         """Add another substitution to the list of substitutions performed after text is
@@ -353,7 +374,7 @@ class TextGenerator(object):
         self.chains.character_tokens = character_tokens
 
     @staticmethod
-    def _tokenize_string(the_string: str) -> str:
+    def _tokenize_string(the_string: str) -> typing.List[str]:
         """Split a string into tokens, which more or less correspond to words. More aware
         than a naive str.split() because it takes punctuation into account to some
         extent.

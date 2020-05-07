@@ -42,17 +42,17 @@ import argparse, pprint, sys
 import patrick_logger               # https://github.com/patrick-brian-mooney/personal-library
 from patrick_logger import log_it
 
-from text_generator import *
+import text_generator as tg
 
 
-force_test = False                      # If we need to fake command-line arguments in an IDE for testing ...
+force_test = False                      # Used if we need to fake command-line arguments in an IDE for testing
 
 
 def print_usage():
     """Print a usage message to the terminal."""
     patrick_logger.log_it("INFO: print_usage() was called", 2)
     print('\n\n')
-    print(__doc__ % __version__.strip('$').strip())
+    print(__doc__ % tg.__version__.strip('$').strip())
 
 def print_html_docs():
     print('Content-type: text/html\n\n')                                # ... print HTTP headers, then documentation.
@@ -203,7 +203,7 @@ See the file LICENSE.md for details.
     parser.add_argument('--html', action='store_true')
     parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('-q', '--quiet', action='count', default=0)
-    parser.add_argument('--version', action='version', version='text_generator.py %s' % __version__.strip('$').strip())
+    parser.add_argument('--version', action='version', version='text_generator.py %s' % tg.__version__.strip('$').strip())
     return vars(parser.parse_args())
 
 
@@ -219,7 +219,7 @@ default_args = {'chars': False,
                 'quiet': 0,
                 'verbose': 0}
 
-def main(generator_class=TextGenerator, **kwargs):
+def main(generator_class=tg.TextGenerator, **kwargs):
     """Handle the main program loop and generate some text.
 
     By default, this routine can simply be called as main(), with no arguments; this
@@ -240,7 +240,7 @@ def main(generator_class=TextGenerator, **kwargs):
         print_html_docs()
 
     if len(kwargs):     # If keyword arguments are passed in, trust them to be the options.
-        opts = apply_defaults(defaultargs=default_args, args=kwargs)
+        opts = tg.apply_defaults(defaultargs=default_args, args=kwargs)
     else:               # Otherwise, parse the command line.
         opts = process_command_line()
 
@@ -281,6 +281,12 @@ def main(generator_class=TextGenerator, **kwargs):
         print(the_text)
     else:
         genny.print_text(sentences_desired=opts['count'], pause=opts['pause'], columns=opts['columns'])
+
+    if force_test:
+        if tg._is_cythonized:
+            print("\n\nWe're running under Cython!")
+        else:
+            print("\n\nWe're running under CPython!")
 
 
 if __name__ == "__main__":
