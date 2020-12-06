@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.5
 # -*- coding: utf-8 -*-
-"""This is the actual code implementing the Patrick Mooney's Markov chain-based
+"""This is the actual code implementing Patrick Mooney's Markov chain-based
 text generator, separated into a separate module so that it can easily be
 compiled with Cython.
 
@@ -18,8 +18,7 @@ import typing
 from pathlib import Path
 
 import text_handling as th          # https://github.com/patrick-brian-mooney/personal-library
-import patrick_logger               # https://github.com/patrick-brian-mooney/personal-library
-from patrick_logger import log_it
+
 
 cython = None
 
@@ -36,15 +35,23 @@ __copyright__ = "Copyright (c) 2015-20 Patrick Mooney"
 __license__ = "GPL v3, or, at your option, any later version"
 
 
-patrick_logger.verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the
-                                    # "are we running on a webserver?" check.
+# logging-related stubs
+verbosity_level = 1  # Bump above zero to get more verbose messages about processing and to skip the "are we running on a webserver?" check.
 
+def log_it(what, log_level=1):
+    """Handles logging to console, based on current verbosity_level. #FIXME: just use the stdlib logging module.
+    """
+    if log_level <= verbosity_level:
+        print(what)
+
+
+# Basic declarations about English-language text.
 punct_with_space_after = r'.,\:!?;'
 sentence_ending_punct = r'.!?'
 punct_with_no_space_before = r'.,!?;—․-:/'
 punct_with_no_space_after = r'—-/․'             # Note: that last character is U+2024, "one-dot leader".
 word_punct = r"'’❲❳%°#․$"                       # Punctuation marks to be considered part of a word.
-token_punct = r".,:\-!?;—/&…⸻"                # These punctuation marks also count as tokens.
+token_punct = r".,:\-!?;—/&…⸻"              # These punctuation marks also count as tokens.
 
 
 # First, some utility functions.
@@ -108,6 +115,7 @@ def to_hash_key(lst: list) -> tuple:
     """
     return tuple(lst)
 
+
 def apply_defaults(defaultargs: dict, args: dict) -> dict:
     """Takes two dictionaries, ARGS and DEFAULTARGS, on the assumption that these are
     argument dictionaries for the **kwargs call syntax. Returns a new dictionary that
@@ -120,6 +128,7 @@ def apply_defaults(defaultargs: dict, args: dict) -> dict:
     ret = defaultargs.copy()
     ret.update(args)
     return ret
+
 
 def fix_caps(word: str) -> str:
     """This is Harry Schwartz's token comparison function, allowing words (other than
@@ -147,18 +156,19 @@ class MarkovChainTextModel(object):
     """Chains representing a model of a text."""
     def __init__(self):
         """Instantiate a new, empty set of chains."""
-        self.the_starts = None              # List of tokens allowed at the beginning of a sentence.
+        self.starts = None              # List of tokens allowed at the beginning of a sentence.
         self.markov_length = 0          # Length of the chains.
-        self.the_mapping = None         # Dictionary representing the Markov chains.
+        self.mapping = None         # Dictionary representing the Markov chains.
         self.character_tokens = False   # True if the chains are characters, False if they are words.
+        self.finalized = False
 
     def store_chains(self, filename: typing.Union[str, Path]):
         """Shove the relevant chain-based data into a dictionary, then pickle it and
         store it in the designated file.
         """
-        chains_dictionary = { 'the_starts': self.the_starts,
+        chains_dictionary = { 'the_starts': self.starts,
                               'markov_length': self.markov_length,
-                              'the_mapping': self.the_mapping,
+                              'the_mapping': self.mapping,
                               'character_tokens': self.character_tokens }
         try:
             with open(filename, 'wb') as the_chains_file:
@@ -182,9 +192,10 @@ class MarkovChainTextModel(object):
             log_it("ERROR: Can't read chains from %s because a pickling error occurred; the system said '%s'." % (filename, str(e)), 0)
         chains_dictionary = apply_defaults(defaultargs=default_chains, args=chains_dictionary)
         self.markov_length = chains_dictionary['markov_length']
-        self.the_starts = chains_dictionary['the_starts']
-        self.the_mapping = chains_dictionary['the_mapping']
+        self.starts = chains_dictionary['the_starts']
+        self.mapping = chains_dictionary['the_mapping']
         self.character_tokens = chains_dictionary['character_tokens']
+        self.finalized = True
 
 
 class TextGenerator(object):
@@ -248,7 +259,7 @@ class TextGenerator(object):
 
     @staticmethod
     def comparison_form(word: str) -> str:
-        """This function is called to normalize the words for the purpose of storing
+        """This function is called to normalize words for the purpose of storing
         them in the list of Markov chains, and for looking at previous words when
         deciding what the next word in the sequence should be. By default, this
         function performs no processing at all; override it if any preprocessing
@@ -298,27 +309,30 @@ class TextGenerator(object):
             assert len(sublist) == 2, "ERROR: substitution %s is not two items long." % sublist
         self.final_substitutions = substitutions
 
-    @staticmethod
-    def addItemToTempMapping(history: typing.List[str],             #FIXME: check annotations
+    def addItemToTempMapping(self, history: typing.List[str],             #FIXME: check annotations
                              word: str,
-                             the_temp_mapping: typing.Dict[tuple, str]) -> None:
+                             weight: typing.Union[float, int]=1.0) -> None:
         """Self-explanatory -- adds "word" to the "the_temp_mapping" dict under "history".
         the_temp_mapping (and the_mapping) both match each word to a list of possible next
         words.
+
+        WEIGHT is a real number (by default, 1.0) indicating how much 'weight' to add to
+        this mapping in the temporary mapping. Items that are weighted more heavily will
+        of course be more likely to pop back out.
 
         Given history = ["the", "rain", "in"] and word = "Spain", we add "Spain" to
         the entries for ["the", "rain", "in"], ["rain", "in"], and ["in"].
         """
         while len(history) > 0:
             first = tuple(history)
-            if first in the_temp_mapping:
-                if word in the_temp_mapping[first]:
-                    the_temp_mapping[first][word] += 1.0
+            if first in self.the_temp_mapping:
+                if word in self.the_temp_mapping[first]:
+                    self.the_temp_mapping[first][word] += weight
                 else:
-                    the_temp_mapping[first][word] = 1.0
+                    self.the_temp_mapping[first][word] = weight
             else:
-                the_temp_mapping[first] = {}
-                the_temp_mapping[first][word] = 1.0
+                self.the_temp_mapping[first] = dict()
+                self.the_temp_mapping[first][word] = weight
             history = history[1:]
 
     def next(self, prevList: typing.List,                           #FIXME: check annotations
@@ -327,33 +341,58 @@ class TextGenerator(object):
         given the previous ones.
         """
         prevList = [ self.comparison_form(p) for p in prevList ]        # Use the canonical comparison form
-        sum = 0.0
-        retval = ""
+        total = 0.0
+        ret = ""
         index = random.random()
         # Shorten prevList until it's in the_mapping
         try:
             while tuple(prevList) not in the_mapping:
                 prevList.pop(0)         # Just drop the earliest list element & try again if the list isn't in the_mapping
         except IndexError:  # If we somehow wind up with an empty list (shouldn't happen), then just end the sentence;
-            retval = "."    # this will force the generator to start a new one.
+            ret = "."    # this will force the generator to start a new one.
         else:               # Otherwise, get a random word from the_mapping, given prevList, if prevList isn't empty
             for k, v in the_mapping[tuple(prevList)].items():
-                sum += v
-                if sum >= index and retval == "":
-                    retval = k
+                total += v
+                if total >= index and ret == "":
+                    ret = k
                     break
-        return retval
+        return ret
 
     def _build_mapping(self, token_list: typing.List[str],          #FIXME: check annotations
                        markov_length: int,
-                       character_tokens: bool=False):
-        """Create the actual Markov chain-based training data for the model, based on an
-        ordered list of tokens passed in.
+                       character_tokens: bool=False,
+                       learn_starts: bool=True,
+                       weight: typing.Union[float, int]=1.0) -> None:
+        """Add the data in TOKEN_LIST to the temporary mapping data that is being built
+        as the model is trained. If CHARACTER_TOKENS is True, sets the corresponding
+        flag on the chains (and the chains that are passed in should also be letters,
+        not words: this is not checked, but getting it wrong may result in weird
+        behavior later on). MARKOV_LENGTH is of course the length of the Markov chains
+        being generated. If LEARN_STARTS in True (the default), the first words of
+        sentences in TOKEN_LIST are also added to the .starts attribute of the chains.
+        This is normally desirable, and there has to be SOMETHING in .starts for a
+        set of chains to be able to produce text; but there may be texts (such as texts
+        containing partial sentences, say) that we want to train a generator on but that
+        consist of incomplete sentences; setting LEARN_STARTS to False for those texts
+        allows them to pad the existing chains without worrying that weird uncapitalized
+        and grammatically weird sentences will result because of this fact. WEIGHT is
+        the relative weighting to give to these tokens in the mapping; this will be
+        normalized later when _finalize_mappings is called.
+
+        This function does not finalize the mappings by normalizing the frequency
+        counts; _finalize_mapping needs to be called for that.
         """
-        the_temp_mapping = {}.copy()
-        the_mapping = {}.copy()
-        starts = [][:]
-        starts.append(token_list[0])
+        try:
+            _ = self.the_temp_mapping
+        except AttributeError:
+            self.the_temp_mapping = dict()
+        if (not hasattr(self.chains, 'starts')) or not (self.chains.starts):
+            self.chains.starts = list()
+
+        self.chains.markov_length = markov_length
+        self.chains.character_tokens = character_tokens
+        if token_list[0] not in self.chains.starts:
+            self.chains.starts.append(token_list[0])
         for i in range(1, len(token_list) - 1):
             if i <= markov_length:
                 history = token_list[: i + 1]
@@ -361,17 +400,40 @@ class TextGenerator(object):
                 history = token_list[i - markov_length + 1 : i + 1]
             follow = token_list[i + 1]
             # if the last elt was a sentence-ending punctuation, add the next word to the start list
-            if history[-1] in sentence_ending_punct and follow not in punct_with_space_after:
-                starts.append(follow)
-            self.addItemToTempMapping(history, follow, the_temp_mapping)
-        # Now, normalize the values in the_temp_mapping and put them into the_mapping
-        for first, followset in the_temp_mapping.items():
+            if learn_starts:
+                if history[-1] in sentence_ending_punct and follow not in punct_with_space_after:
+                    if follow not in self.chains.starts:
+                        self.chains.starts.append(follow)
+            self.addItemToTempMapping(history, follow, weight=weight)
+
+    def _finalize_mapping(self):
+        """Finalize the mapping in SELF by normalizing probability frequencies of
+        occurrences. This must be done once, after the model has been trained on
+        all texts, but not more than once. The higher-level train() method calls it and
+        is a good choice if we're passing in one set of texts that has one set of
+        parameters that get set all at once. For fiddlier training processes that don't
+        happen atomically, it should be called manually once everything is done.
+        """
+        # First, check the invariants
+        assert hasattr(self, 'the_temp_mapping'), "ERROR! The text generator has not been trained!"
+        assert self.the_temp_mapping, "ERROR! Training for the text generator has not begun!"
+        assert hasattr(self.chains, 'starts'), "ERROR! The text generator's training did not result in any sentence beginnings!"
+        assert self.chains.starts, "ERROR! The text generator's training did not result in any sentence beginnings!"
+
+        # Next, restrict the possible range of STARTS if we're using single-chracter chains.
+        if self.chains.character_tokens:
+            self.chains.starts = [c for c in self.chains.starts if c.isupper()]
+
+        # Then, normalize the frequencies and install the new dictionary in the object's mappings.
+        the_mapping = dict()
+        for first, followset in self.the_temp_mapping.items():
             total = sum(followset.values())
             the_mapping[first] = dict([(k, v / total) for k, v in followset.items()])   # Here's the normalizing step.
-        self.chains.the_starts = starts
-        self.chains.the_mapping = the_mapping
-        self.chains.markov_length = markov_length
-        self.chains.character_tokens = character_tokens
+        self.chains.mapping = the_mapping
+
+        # Clean up and mark finalized.
+        del self.the_temp_mapping
+        self.chains.finalized = True
 
     @staticmethod
     def _tokenize_string(the_string: str) -> typing.List[str]:
@@ -381,7 +443,7 @@ class TextGenerator(object):
         """
         return re.findall(r"[\w%s]+|[%s]" % (word_punct, token_punct), the_string)
 
-    def _token_list(self, the_string: str,                                  #FIXME: check annotations
+    def _token_list(self, the_string: str,
                     character_tokens: bool=False) -> typing.List[str]:
         """Converts a string into a set of tokens so that the text generator can
         process, and therefore be trained by, it.
@@ -394,22 +456,38 @@ class TextGenerator(object):
 
     def is_trained(self) -> bool:
         """Detect whether this model is trained or not."""
-        return (self.chains.the_starts and self.chains.the_mapping and self.chains.markov_length)
+        return all([self.chains.finalized, self.chains.starts, self.chains.mapping, self.chains.markov_length])
 
     def _train_from_text(self, the_text: str,
                          markov_length: int=1,
-                         character_tokens: bool=False):
-        """Train the model by getting it to analyze a text passed in."""
+                         character_tokens: bool=False,
+                         weight: typing.Union[float, int]=1.0,
+                         learn_starts: bool=True) -> None:
+        """Train the model by getting it to analyze a text passed in. Note that THE_TEXT is
+        a single string here. MARKOV_LENGTH is, of course, the length of the Markov
+        chains to generate; CHARACTER_TOKENS indicates whether tokens are single
+        characters (if it is True) or whole words (if it is False). WEIGHT is the
+        relative numerical weighting to give to this piece of text. LEARN_STARTS
+        toggles whether the beginnings of sentences are added to the generator's
+        .starts list, which is generally desirable but needs to be turned off in some
+        situations.
+        """
+        assert the_text, "ERROR! blank text was passed to _train_from_text()!"
         self._build_mapping(self._token_list(the_text, character_tokens=character_tokens),
-                            markov_length=markov_length, character_tokens=character_tokens)
+                            markov_length=markov_length, character_tokens=character_tokens,
+                            weight=weight, learn_starts=learn_starts)
 
-    def train(self, the_files: typing.Union[str, bytes, Path, typing.List],
+    def train(self, the_files: typing.Union[str, bytes, Path, typing.List[typing.Union[str, bytes, Path]]],
               markov_length: int=1,
-              character_tokens: bool=False):
-        """Train the model from a text file, or a list of text files supplied,
-         as THE_FILES.
-         """
-        if isinstance(the_files, (str, bytes, Path)): the_files = [ the_files ]
+              character_tokens: bool=False) -> None:
+        """Train the model from a text file, or a list of text files, supplied as THE_FILES.
+        This routine is the easiest way to train a generator all at once on a single
+        file or set of files that all have the same training parameters. Fiddlier
+        training process will need to call _train_from_text() manually at least once,
+        then _finalize_mapping when all of the mappings have been created.
+        """
+        if isinstance(the_files, (str, bytes, Path)):
+            the_files = [ the_files ]
         assert isinstance(the_files, (list, tuple)), "ERROR: you cannot pass an object of type %s to %s.train" % (type(the_files), self)
         assert len(the_files) > 0, "ERROR: empty file list passed to %s.train()" % self
         the_text = ""
@@ -417,23 +495,24 @@ class TextGenerator(object):
             with open(which_file) as the_file:
                 the_text = the_text + '\n' + the_file.read()
         self._train_from_text(the_text=the_text, markov_length=markov_length, character_tokens=character_tokens)
+        self._finalize_mapping()
 
     def _gen_sentence(self) -> str:
         """Build a sentence, starting with a random 'starting word.' Returns a string,
         which is the generated sentence.
         """
-        assert self.is_trained(), "ERROR: the model %s needs to be trained before it can generate text" % self
+        assert self.is_trained(), "ERROR: the model %s needs to be trained before it can generate text!" % self
         log_it("      _gen_sentence() called.", 4)
         log_it("        markov_length = %d." % self.chains.markov_length, 5)
-        log_it("        the_mapping = %s." % self.chains.the_mapping, 5)
-        log_it("        the_starts = %s." % self.chains.the_starts, 5)
+        log_it("        the_mapping = %s." % self.chains.mapping, 5)
+        log_it("        starts = %s." % self.chains.starts, 5)
         log_it("        allow_single_character_sentences = %s." % self.allow_single_character_sentences, 5)
-        curr = random.choice(self.chains.the_starts)
+        curr = random.choice(self.chains.starts)
         sent = curr
         prevList = [curr]
         # Keep adding words until we hit a period, exclamation point, or question mark
         while curr not in sentence_ending_punct:
-            curr = self.next(prevList, self.chains.the_mapping)
+            curr = self.next(prevList, self.chains.mapping)
             prevList.append(curr)
             # if the prevList has gotten too long, trim it
             while len(prevList) > self.chains.markov_length:
@@ -457,8 +536,8 @@ class TextGenerator(object):
         """
         log_it("_produce_text() called.", 4)
         log_it("  Markov length is %d; requesting %d sentences." % (self.chains.markov_length, sentences_desired), 4)
-        log_it("  Legitimate starts: %s" % self.chains.the_starts, 5)
-        log_it("  Probability data: %s" % self.chains.the_mapping, 5)
+        log_it("  Legitimate starts: %s" % self.chains.starts, 5)
+        log_it("  Probability data: %s" % self.chains.mapping, 5)
         the_text = ""
         for which_sentence in range(0, sentences_desired):
             try:
@@ -492,19 +571,20 @@ class TextGenerator(object):
     def _printer(self, what: str,
                  columns: int=-1):
         """Print WHAT in an appropriate way, wrapping to the specified number of
-        COLUMNS. If COLUMNS is -1, take a whack at guessing what it should be.
+        COLUMNS. If COLUMNS is -1, take a whack at guessing what it should be. If
+        COLUMNS is zero, do no wrapping at all.
         """
         if columns == 0:  # Wrapping is totally disabled. Print exactly as generated.
-            log_it("INFO: COLUMNS is zero; not wrapping text at all", 2)
+            log_it("INFO: COLUMNS is zero; not wrapping text at all", 3)
             print(what)
         else:
             if columns == -1:  # Wrap to best guess for terminal width
-                log_it("INFO: COLUMNS is -1; wrapping text to best-guess column width", 2)
+                log_it("INFO: COLUMNS is -1; wrapping text to best-guess column width", 3)
                 padding = 0
-            else:  # Wrap to specified width (unless current terminal width is odd, in which case we're off by 1. Oh well.)
+            else:  # Wrap to specified width (unless current terminal width is odd, in which case we're off by 1/2. Oh well.)
                 padding = max((th.terminal_width() - columns) // 2, 0)
-                log_it("INFO: COLUMNS is %s; padding text with %s spaces on each side" % (columns, padding), 2)
-                log_it("NOTE: terminal width is %s" % th.terminal_width(), 2)
+                log_it("INFO: COLUMNS is %s; padding text with %s spaces on each side" % (columns, padding), 3)
+                log_it("NOTE: terminal width is %s" % th.terminal_width(), 3)
             what = th.multi_replace(what, [['\n\n', '\n'], ])       # Last chance to postprocess text is right here
             for the_paragraph in what.split('\n'):
                 if the_paragraph:                   # Skip any empty paragraphs that may pop up
@@ -521,4 +601,9 @@ class TextGenerator(object):
             self._printer(t, columns=columns)
             time.sleep(max(pause - (time.time() - time_now), 0))    # Pause until it's time for a new paragraph.
 
+
+if __name__ == "__main__":
+    gen = TextGenerator()
+    gen.train(['/lovecraft/corpora/previous/The Alchemist.txt'])
+    gen.print_text(25)
 

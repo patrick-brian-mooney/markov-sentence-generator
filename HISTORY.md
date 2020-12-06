@@ -125,3 +125,15 @@ v2.2, 12 May 2017
 v2.3, 6 May 2020
 ----------------
 * Refactoring a bit, and setting up Cython builds of the generators.
+
+v2.4, 5 Dec 2020
+----------------
+* Added a number of interfaces to allow for fine-tuning of training parameters. Most notably,
+  * `TextGenerator.addItemToTempMapping()` is no longer a static method and requires an instance to call.
+  * `TextGenerator._build_mapping()` now takes two new optional parameters:
+    * `learn_starts` (default `True`): whether this particular text should contribute to the underlying `starts` list of tokens; and
+    * `weight` (default: 1.0) indicates how much emphasis (relative to other texts that the generator is seeing during its training cycle) this particular text should be given. Must be a positive number.
+    * These two parameters may be useful when doing non-basic training procedures.
+  * `TextGenerator.addItemToTempMapping()` also takes a `weight` parameter to pass it downwards to `_build_mapping()`.
+  * Several object-attribute names have been renamed for the sake of concision.
+    * Some local variables, too.

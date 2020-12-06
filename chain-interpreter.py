@@ -54,7 +54,7 @@ class MarkovChainTextModel(object):
             print("ERROR: Can't read chains from %s because a pickling error occurred; the system said '%s'." % (filename, e))
             sys.exit(2)
         self.markov_length = chains_dictionary['markov_length']
-        self.the_starts = chains_dictionary['the_starts']
+        self.the_starts = chains_dictionary['starts']
         self.the_mapping = chains_dictionary['the_mapping']
         self.character_tokens = chains_dictionary['character_tokens']
         assert not self.character_tokens, "ERROR: this script cannot interpret 'character token' Markov chain files."

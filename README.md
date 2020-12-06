@@ -1,14 +1,14 @@
 Patrick Mooney's Markov Sentence Generator
 ==========================================
 
-v2.2, 12 May 2017
+v2.4, 5 December 2020
 -----------------
 
 This program generates (one or more sentences of) "natural-sounding" random text based on an existing text (or more than one text) that it analyzes, creates a model of, and uses as the basis for the new text that it generates. That is to say, given some sample text, the program creates a set of Markov chains that models those input text(s) and then generates new text by randomly traversing that set of chains.  Use it from the terminal by doing something like:
 
 `$ ./text_generator.py [options] -i FILENAME [-i FILENAME ] [-i filename ...]`
 
-Note that users of non-Unix-based operating systems (notably Windows) may need to drop the `./` at the beginning of that command. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome. (See the file PROGRAMMING.md for more information.)
+Note that users of non-Unix-based operating systems (notably Windows) may need to drop the `./` at the beginning of that command. It should, in theory, run fine on non-Linux operating systems, but I haven't tested this, myself. Feedback is welcome on this or other matters. Collaboration is also quite welcome. (See the file PROGRAMMING.md for more information.) This script requires Python 3.5 or later.
 
 `text_generator.py` needs existing text to use as the basis for the text that it generates. You must either specify at least one plain-text file (with `-i` or `--input`) for this purpose, or else must use `-l` or `--load` to specify a file containing compiled probability data ("saved chains"), created with `-o` on a previous run. The `-l` (or `--load`) option is a convenience to save processing time: the program will run more quickly, but you can't combine `-l`/`--load` with `-i`/`--input`, nor can you use more than one `-l`/`--load` in a single program run. There are other options—those that would alter an existing model, primarily—that are incompatible with `-l`/`--load`, too. See below for more details.
 
